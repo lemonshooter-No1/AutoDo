@@ -11,11 +11,11 @@ import {
   verifyDelivery,
 } from "./ai.js";
 import { dispatchTask } from "./dispatch.js";
+import { seedSampleBounties } from "./seed-samples.js";
 import { db, getTask, getUser, upsertTask, upsertUser } from "./store.js";
 
 const app = express();
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "..", "public")));
 
 function taskResponse(task) {
   return {
@@ -105,11 +105,144 @@ app.post("/tasks/:id/confirm-payment", (req, res) => {
   res.json(taskResponse(task));
 });
 
+/** 已发布任务（供浏览，类似 RentAHuman bounties 列表） */
+const PUBLIC_STATUSES = new Set([
+  "escrowed",
+  "dispatching",
+  "in_progress",
+  "submitted",
+  "completed",
+]);
+
+function toBountyItem(task) {
+  const spec = task.spec || {};
+  const loc = spec.location || {};
+  return {
+    id: task.id,
+    title: spec.title || "任务",
+    summary: (spec.summary || task.raw_input || "").slice(0, 200),
+    task_type: spec.task_type || "general",
+    price_cents: task.escrow_cents || spec.suggested_price_cents || 0,
+    location: spec.is_online ? "远程" : loc.address || "—",
+    status: task.status,
+    open: task.status === "dispatching",
+    created_at: task.created_at,
+    steps: spec.steps || [],
+  };
+}
+
+function listBounties(req, res) {
+  const sort = req.query.sort === "price" ? "price" : "new";
+  const state = db.read();
+  let tasks = Object.values(state.tasks).filter((t) => PUBLIC_STATUSES.has(t.status));
+
+  if (sort === "price") {
+    tasks.sort(
+      (a, b) =>
+        (b.escrow_cents || b.spec?.suggested_price_cents || 0) -
+        (a.escrow_cents || a.spec?.suggested_price_cents || 0)
+    );
+  } else {
+    tasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  }
+
+  res.json({ items: tasks.map(toBountyItem), total: tasks.length });
+}
+
+function getBounty(req, res) {
+  const task = getTask(db.read(), req.params.id);
+  if (!task || !PUBLIC_STATUSES.has(task.status)) {
+    return res.status(404).json({ error: "任务不存在或未公开发布" });
+  }
+  res.json(toBountyItem(task));
+}
+
+app.get("/bounties", listBounties);
+app.get("/bounties/:id", getBounty);
+app.get("/api/bounties", listBounties);
+app.get("/api/bounties/:id", getBounty);
+
 app.get("/tasks/:id", (req, res) => {
   const task = getTask(db.read(), req.params.id);
   if (!task) return res.status(404).json({ error: "任务不存在" });
   res.json(taskResponse(task));
 });
+
+/** 雇主：我发布的全部任务及完成状态 */
+function listEmployerTasks(req, res) {
+  const state = db.read();
+  const eid = req.params.id;
+  const items = Object.values(state.tasks)
+    .filter((t) => t.employer_id === eid)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .map((t) => ({
+      id: t.id,
+      title: t.spec?.title || "任务",
+      summary: (t.spec?.summary || t.raw_input || "").slice(0, 120),
+      task_type: t.spec?.task_type,
+      status: t.status,
+      completed: t.status === "completed",
+      price_cents: t.escrow_cents || t.spec?.suggested_price_cents || 0,
+      worker_id: t.worker_id,
+      push_count: (t.push_sent_to || []).length,
+      created_at: t.created_at,
+      updated_at: t.updated_at,
+    }));
+  res.json({ items, total: items.length });
+}
+
+/** 雇员：平台推送记录（含已接/未接） */
+function listWorkerPushes(req, res) {
+  const state = db.read();
+  const wid = req.params.id;
+  const items = state.inbox
+    .filter((i) => i.worker_id === wid)
+    .map((i) => {
+      const task = getTask(state, i.task_id);
+      if (!task) return null;
+      const takenByOther = task.worker_id && task.worker_id !== wid;
+      return {
+        task_id: task.id,
+        title: task.spec?.title,
+        summary: (task.spec?.summary || "").slice(0, 120),
+        price_cents: task.escrow_cents || task.spec?.suggested_price_cents || 0,
+        pushed_at: i.pushed_at,
+        accepted: i.accepted,
+        task_status: task.status,
+        can_accept:
+          !i.accepted && !takenByOther && ["dispatching", "escrowed"].includes(task.status),
+        missed: !i.accepted && takenByOther,
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => new Date(b.pushed_at) - new Date(a.pushed_at));
+  res.json({ items, total: items.length });
+}
+
+/** 雇员：我接单的任务 */
+function listWorkerAssignments(req, res) {
+  const state = db.read();
+  const wid = req.params.id;
+  const items = Object.values(state.tasks)
+    .filter((t) => t.worker_id === wid)
+    .sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))
+    .map((t) => ({
+      id: t.id,
+      title: t.spec?.title,
+      status: t.status,
+      completed: t.status === "completed",
+      price_cents: t.escrow_cents || t.spec?.suggested_price_cents || 0,
+      updated_at: t.updated_at,
+    }));
+  res.json({ items, total: items.length });
+}
+
+app.get("/employers/:id/tasks", listEmployerTasks);
+app.get("/api/employers/:id/tasks", listEmployerTasks);
+app.get("/workers/:id/pushes", listWorkerPushes);
+app.get("/api/workers/:id/pushes", listWorkerPushes);
+app.get("/workers/:id/assignments", listWorkerAssignments);
+app.get("/api/workers/:id/assignments", listWorkerAssignments);
 
 // 雇员听单
 app.post("/workers/:id/online", (req, res) => {
@@ -238,13 +371,35 @@ app.post("/dev/seed", (_req, res) => {
     name: "演示雇员",
     lat: 39.9219,
     lng: 116.4436,
-    skills: ["pet_care", "errand"],
+    skills: ["pet_care", "errand", "digital_labor"],
     is_online: false,
     wallet_balance_cents: 0,
   });
+  const samplesAdded = seedSampleBounties(state);
+  for (const task of Object.values(state.tasks)) {
+    for (const wid of task.push_sent_to || []) {
+      const exists = state.inbox.some((i) => i.worker_id === wid && i.task_id === task.id);
+      if (!exists) {
+        state.inbox.push({
+          worker_id: wid,
+          task_id: task.id,
+          accepted: task.worker_id === wid,
+          pushed_at: task.updated_at || task.created_at,
+        });
+      }
+    }
+  }
   db.write(state);
-  res.json({ ok: true, employer_id: "employer-demo", worker_id: "worker-demo" });
+  res.json({
+    ok: true,
+    employer_id: "employer-demo",
+    worker_id: "worker-demo",
+    samples_added: samplesAdded,
+  });
 });
+
+// 静态页面放最后，避免干扰 API
+app.use(express.static(path.join(__dirname, "..", "public")));
 
 const PORT = Number(process.env.PORT) || 8000;
 

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>雇员中心 — AutoDo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body class="page-dash">
+  <nav class="nav">
+    <a href="/" class="logo"><span class="logo-mark">◇</span> AutoDo</a>
+    <div class="nav-links">
+      <a href="/bounties.html">任务列表</a>
+      <a href="/employer.html">雇主中心</a>
+      <span class="nav-current">雇员中心</span>
+    </div>
+  </nav>
+
+  <main class="dash">
+    <header class="dash-head">
+      <h1>雇员中心</h1>
+      <p>查看平台推送，接单并完成任务</p>
+    </header>
+
+    <section class="dash-card">
+      <div class="worker-bar">
+        <button type="button" id="btn-online" class="btn primary">开始听单</button>
+        <button type="button" id="btn-offline" class="btn text hidden">停止听单</button>
+        <span id="worker-wallet" class="wallet-tag"></span>
+      </div>
+    </section>
+
+    <section class="dash-card">
+      <div class="dash-row">
+        <h2>平台推送</h2>
+        <button type="button" id="btn-refresh-pushes" class="btn text">刷新</button>
+      </div>
+      <p class="dash-hint">以下为 AI 派单推送给你的任务（含已接 / 已被他人抢走）</p>
+      <div id="push-list" class="task-list"></div>
+      <p id="push-empty" class="empty">暂无推送，请先开启听单</p>
+    </section>
+
+    <section id="worker-active" class="dash-card hidden">
+      <h2>当前任务</h2>
+      <div id="worker-card" class="task-spec-card"></div>
+      <label for="delivery-photo">交付凭证</label>
+      <input type="text" id="delivery-photo" placeholder="照片文件名或链接" />
+      <button type="button" id="btn-submit" class="btn primary full">提交完成</button>
+    </section>
+
+    <section class="dash-card">
+      <h2>我接的单</h2>
+      <div id="assignment-list" class="task-list compact"></div>
+      <p id="assignment-empty" class="empty hidden">尚未接单</p>
+    </section>
+  </main>
+
+  <script type="module" src="/worker.js"></script>
+</body>
+</html>

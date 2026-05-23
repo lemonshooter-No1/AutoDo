@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>雇主中心 — AutoDo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body class="page-dash">
+  <nav class="nav">
+    <a href="/" class="logo"><span class="logo-mark">◇</span> AutoDo</a>
+    <div class="nav-links">
+      <a href="/bounties.html">任务列表</a>
+      <a href="/worker.html">雇员中心</a>
+      <span class="nav-current">雇主中心</span>
+    </div>
+  </nav>
+
+  <main class="dash">
+    <header class="dash-head">
+      <h1>雇主中心</h1>
+      <p>发布任务，查看是否已完成</p>
+    </header>
+
+    <section class="dash-card">
+      <h2>发布新任务</h2>
+      <textarea id="employer-input" rows="3" placeholder="描述需求，例如：明天早上到朝阳区上门喂猫"></textarea>
+      <button type="button" id="btn-publish" class="btn primary full">AI 解析并发布</button>
+    </section>
+
+    <section id="employer-clarify" class="dash-card hidden">
+      <h2>补充信息</h2>
+      <form id="clarify-form"></form>
+      <button type="button" id="btn-clarify" class="btn primary full">继续</button>
+    </section>
+
+    <section id="employer-spec" class="dash-card hidden">
+      <h2>确认付款</h2>
+      <div id="spec-preview" class="task-spec-card"></div>
+      <button type="button" id="btn-pay" class="btn primary full">确认并托管付款</button>
+    </section>
+
+    <section class="dash-card">
+      <div class="dash-row">
+        <h2>我的任务</h2>
+        <button type="button" id="btn-refresh-list" class="btn text">刷新</button>
+      </div>
+      <div class="filter-tabs">
+        <button type="button" class="filter-btn active" data-filter="all">全部</button>
+        <button type="button" class="filter-btn" data-filter="active">进行中</button>
+        <button type="button" class="filter-btn" data-filter="done">已完成</button>
+      </div>
+      <div id="employer-tasks" class="task-list"></div>
+      <p id="employer-empty" class="empty hidden">还没有任务，先发布一条吧</p>
+    </section>
+  </main>
+
+  <script type="module" src="/employer.js"></script>
+</body>
+</html>
