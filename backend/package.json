@@ -1,0 +1,17 @@
+{
+  "name": "autodo-backend",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "start:8001": "set PORT=8001&& node src/index.js",
+    "stop": "node scripts/stop-port.js 8000",
+    "dev": "node --watch src/index.js",
+    "demo": "node scripts/demo_flow.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "uuid": "^11.0.5"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "autodo",
+  "private": true,
+  "scripts": {
+    "start": "npm --prefix backend start",
+    "start:8001": "npm --prefix backend run start:8001",
+    "stop": "npm --prefix backend run stop",
+    "demo": "npm --prefix backend run demo",
+    "install:backend": "npm --prefix backend install"
+  }
+}

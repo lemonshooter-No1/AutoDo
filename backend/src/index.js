@@ -1,0 +1,265 @@
+import express from "express";
+import path from "path";
+import { fileURLToPath } from "url";
+import { v4 as uuid } from "uuid";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import {
+  applyClarifications,
+  clarifyQuestions,
+  parseEmployerInput,
+  verifyDelivery,
+} from "./ai.js";
+import { dispatchTask } from "./dispatch.js";
+import { db, getTask, getUser, upsertTask, upsertUser } from "./store.js";
+
+const app = express();
+app.use(express.json());
+app.use(express.static(path.join(__dirname, "..", "public")));
+
+function taskResponse(task) {
+  return {
+    id: task.id,
+    status: task.status,
+    employer_id: task.employer_id,
+    worker_id: task.worker_id || null,
+    raw_input: task.raw_input,
+    spec: task.spec,
+    clarifications: task.clarifications || {},
+    escrow_cents: task.escrow_cents || 0,
+    push_sent_to: task.push_sent_to || [],
+    created_at: task.created_at,
+    updated_at: task.updated_at,
+  };
+}
+
+// ①② 雇主发布
+app.post("/tasks", (req, res) => {
+  const { employer_id, raw_input } = req.body || {};
+  const state = db.read();
+  const employer = getUser(state, employer_id);
+  if (!employer || employer.role !== "employer") {
+    return res.status(404).json({ error: "雇主不存在" });
+  }
+
+  const spec = parseEmployerInput(raw_input);
+  const task = {
+    id: uuid(),
+    status: spec.executable_ready ? "awaiting_payment" : "clarifying",
+    employer_id,
+    worker_id: null,
+    raw_input,
+    spec,
+    clarifications: {},
+    escrow_cents: 0,
+    push_sent_to: [],
+    delivery: null,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  upsertTask(state, task);
+  db.write(state);
+
+  const out = taskResponse(task);
+  if (!spec.executable_ready) out.clarify_questions = clarifyQuestions(spec.missing_fields);
+  res.json(out);
+});
+
+// ② 澄清
+app.post("/tasks/:id/clarify", (req, res) => {
+  const state = db.read();
+  const task = getTask(state, req.params.id);
+  if (!task) return res.status(404).json({ error: "任务不存在" });
+
+  task.clarifications = { ...task.clarifications, ...(req.body.answers || {}) };
+  task.spec = applyClarifications(task.spec, task.clarifications);
+  task.status = task.spec.executable_ready ? "awaiting_payment" : "clarifying";
+  task.updated_at = new Date().toISOString();
+  upsertTask(state, task);
+  db.write(state);
+
+  const out = taskResponse(task);
+  if (!task.spec.executable_ready) out.clarify_questions = clarifyQuestions(task.spec.missing_fields);
+  res.json(out);
+});
+
+// ③ 托管 + ④ 派单
+app.post("/tasks/:id/confirm-payment", (req, res) => {
+  const state = db.read();
+  const task = getTask(state, req.params.id);
+  if (!task) return res.status(404).json({ error: "任务不存在" });
+  if (task.status !== "awaiting_payment") {
+    return res.status(400).json({ error: `当前状态不可付款: ${task.status}` });
+  }
+  if (!task.spec.executable_ready) {
+    return res.status(400).json({ error: "任务尚未达到可执行标准" });
+  }
+
+  const amount = req.body.amount_cents ?? task.spec.suggested_price_cents;
+  task.escrow_cents = amount;
+  task.status = "escrowed";
+  task.updated_at = new Date().toISOString();
+  dispatchTask(state, task);
+  upsertTask(state, task);
+  db.write(state);
+  res.json(taskResponse(task));
+});
+
+app.get("/tasks/:id", (req, res) => {
+  const task = getTask(db.read(), req.params.id);
+  if (!task) return res.status(404).json({ error: "任务不存在" });
+  res.json(taskResponse(task));
+});
+
+// 雇员听单
+app.post("/workers/:id/online", (req, res) => {
+  const state = db.read();
+  const w = getUser(state, req.params.id);
+  if (!w || w.role !== "worker") return res.status(404).json({ error: "雇员不存在" });
+  w.is_online = true;
+  w.lat = req.body.lat;
+  w.lng = req.body.lng;
+  if (req.body.skills) w.skills = req.body.skills;
+  upsertUser(state, w);
+  db.write(state);
+  res.json({ worker_id: w.id, is_online: true, skills: w.skills });
+});
+
+app.get("/workers/:id/inbox", (req, res) => {
+  const state = db.read();
+  const items = state.inbox
+    .filter((i) => i.worker_id === req.params.id && !i.accepted)
+    .map((i) => {
+      const task = getTask(state, i.task_id);
+      if (!task || task.status === "completed") return null;
+      return {
+        task_id: task.id,
+        title: task.spec.title,
+        summary: task.spec.summary?.slice(0, 120),
+        suggested_price_cents: task.spec.suggested_price_cents,
+        pushed_at: i.pushed_at,
+      };
+    })
+    .filter(Boolean);
+  res.json(items);
+});
+
+app.get("/workers/:wid/tasks/:tid/card", (req, res) => {
+  const state = db.read();
+  const inbox = state.inbox.find(
+    (i) => i.worker_id === req.params.wid && i.task_id === req.params.tid
+  );
+  if (!inbox) return res.status(404).json({ error: "未收到该任务推送" });
+  const task = getTask(state, req.params.tid);
+  res.json({
+    task_id: task.id,
+    status: task.status,
+    card: task.spec,
+    note: "按卡片执行，无需联系雇主",
+  });
+});
+
+// ⑤ 接单
+app.post("/workers/:wid/tasks/:tid/accept", (req, res) => {
+  const state = db.read();
+  const task = getTask(state, req.params.tid);
+  if (!task) return res.status(404).json({ error: "任务不存在" });
+  if (task.worker_id && task.worker_id !== req.params.wid) {
+    return res.status(409).json({ error: "已被他人接单" });
+  }
+  const inbox = state.inbox.find(
+    (i) => i.worker_id === req.params.wid && i.task_id === req.params.tid
+  );
+  if (!inbox) return res.status(403).json({ error: "你未收到此任务推送" });
+
+  task.worker_id = req.params.wid;
+  task.status = "in_progress";
+  inbox.accepted = true;
+  task.updated_at = new Date().toISOString();
+  upsertTask(state, task);
+  db.write(state);
+  res.json(taskResponse(task));
+});
+
+// ⑤⑥ 提交 + 验货 + 放款
+app.post("/workers/:wid/tasks/:tid/submit", (req, res) => {
+  const state = db.read();
+  const task = getTask(state, req.params.tid);
+  if (!task || task.worker_id !== req.params.wid) {
+    return res.status(404).json({ error: "任务不存在或未指派给你" });
+  }
+  if (task.status !== "in_progress") {
+    return res.status(400).json({ error: `当前状态不可提交: ${task.status}` });
+  }
+
+  const delivery = { photos: req.body.photos || [], notes: req.body.notes || "" };
+  const { ok, reason, confidence } = verifyDelivery(task.spec, delivery);
+  if (!ok) {
+    return res.status(400).json({ verified: false, reason, confidence });
+  }
+
+  const worker = getUser(state, req.params.wid);
+  const fee = Math.floor(task.escrow_cents * 0.15);
+  const payout = task.escrow_cents - fee;
+  worker.wallet_balance_cents = (worker.wallet_balance_cents || 0) + payout;
+  task.delivery = delivery;
+  task.status = "completed";
+  task.updated_at = new Date().toISOString();
+  upsertUser(state, worker);
+  upsertTask(state, task);
+  db.write(state);
+
+  res.json({
+    verified: true,
+    reason,
+    confidence,
+    payout_cents: payout,
+    task: taskResponse(task),
+  });
+});
+
+app.get("/workers/:id/wallet", (req, res) => {
+  const w = getUser(db.read(), req.params.id);
+  if (!w) return res.status(404).json({ error: "雇员不存在" });
+  res.json({ worker_id: w.id, balance_cents: w.wallet_balance_cents || 0 });
+});
+
+app.post("/dev/seed", (_req, res) => {
+  const state = db.read();
+  upsertUser(state, {
+    id: "employer-demo",
+    role: "employer",
+    name: "演示雇主",
+    wallet_balance_cents: 100000,
+  });
+  upsertUser(state, {
+    id: "worker-demo",
+    role: "worker",
+    name: "演示雇员",
+    lat: 39.9219,
+    lng: 116.4436,
+    skills: ["pet_care", "errand"],
+    is_online: false,
+    wallet_balance_cents: 0,
+  });
+  db.write(state);
+  res.json({ ok: true, employer_id: "employer-demo", worker_id: "worker-demo" });
+});
+
+const PORT = Number(process.env.PORT) || 8000;
+
+const server = app.listen(PORT, () => {
+  console.log(`AutoDo  http://127.0.0.1:${PORT}  （前端 + API）`);
+});
+
+server.on("error", (err) => {
+  if (err.code === "EADDRINUSE") {
+    console.error(
+      `\n端口 ${PORT} 已被占用。可选方案：\n` +
+        `  1) 结束占用进程: netstat -ano | findstr :${PORT}  然后 taskkill /PID <pid> /F\n` +
+        `  2) 换端口启动: set PORT=8001 && npm start\n`
+    );
+    process.exit(1);
+  }
+  throw err;
+});

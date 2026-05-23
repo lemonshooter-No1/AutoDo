@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AutoDo — AI 发布，人类执行</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <div class="bg-glow"></div>
+
+  <nav class="nav">
+    <a href="/" class="logo">
+      <span class="logo-mark">◇</span>
+      AutoDo
+    </a>
+    <div class="nav-links">
+      <a href="#how">如何运作</a>
+      <a href="#console" data-role="worker" class="nav-role">听单赚钱</a>
+      <button type="button" class="btn-nav primary" data-role="employer">发布任务</button>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <p class="eyebrow">The meatspace layer · 零聊天众包</p>
+    <h1 class="hero-title">
+      <span class="gradient">AI 发布任务，</span><br />
+      人类在现实世界搞定
+    </h1>
+    <p class="hero-sub">
+      一句话描述需求，AI 标准化并推送。雇员听单接单、按卡片执行、自动验货放款。<strong>无需逛大厅，无需聊天。</strong>
+    </p>
+
+    <div class="hero-stats">
+      <div class="stat">
+        <span class="stat-num" data-count="12840">0</span>
+        <span class="stat-label">在线雇员</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">5km</span>
+        <span class="stat-label">精准派单半径</span>
+      </div>
+      <div class="stat">
+        <span class="stat-num">0</span>
+        <span class="stat-label">条聊天消息</span>
+      </div>
+    </div>
+
+    <div class="hero-cta">
+      <button type="button" class="btn-xl primary" id="hero-post">用 AI 发布任务 →</button>
+      <button type="button" class="btn-xl ghost" id="hero-earn">开始听单赚钱</button>
+    </div>
+  </header>
+
+  <section class="live-section">
+    <div class="live-header">
+      <span class="live-dot"></span>
+      <h2>AI 正在推送的任务</h2>
+      <span class="live-tag">Live</span>
+    </div>
+    <div class="marquee-wrap">
+      <div class="marquee" id="marquee">
+        <article class="bounty-card">
+          <span class="pill">宠物照料</span>
+          <h3>朝阳区上门喂猫</h3>
+          <p class="meta"><strong>¥80</strong> 固定 · 北京</p>
+        </article>
+        <article class="bounty-card">
+          <span class="pill">同城取送</span>
+          <h3>代取快递并送到国贸</h3>
+          <p class="meta"><strong>¥45</strong> 固定 · 北京</p>
+        </article>
+        <article class="bounty-card">
+          <span class="pill">现场代办</span>
+          <h3>医院排队取号</h3>
+          <p class="meta"><strong>¥120</strong> 固定 · 上海</p>
+        </article>
+        <article class="bounty-card">
+          <span class="pill">数字任务</span>
+          <h3>门店照片采集 20 张</h3>
+          <p class="meta"><strong>¥150</strong> 固定 · 远程</p>
+        </article>
+        <article class="bounty-card">
+          <span class="pill">宠物照料</span>
+          <h3>出差一周每日喂猫</h3>
+          <p class="meta"><strong>¥175</strong> 固定 · 广州</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section id="console" class="console-section">
+    <div class="console-header">
+      <h2>工作台</h2>
+      <div class="role-tabs">
+        <button type="button" class="tab active" data-tab="employer">我是雇主</button>
+        <button type="button" class="tab" data-tab="worker">我是雇员</button>
+      </div>
+    </div>
+
+    <main class="console-grid">
+      <section id="panel-employer" class="panel active">
+        <div class="glass-card" id="card-publish">
+          <div class="card-label">Step 1 · AI 解析</div>
+          <h3>Post a task · 发布任务</h3>
+          <p class="hint">自然语言输入，AI 生成标准任务卡片（对标 RentAHuman 的 bounty，但零沟通）。</p>
+          <textarea id="employer-input" rows="3" placeholder="明天早上8点帮我到朝阳区XX小区喂一下猫，猫粮在桌子上"></textarea>
+          <button type="button" id="btn-publish" class="btn primary full">AI 解析并发布 →</button>
+        </div>
+
+        <div id="employer-clarify" class="glass-card hidden">
+          <div class="card-label">Step 2 · 预检澄清</div>
+          <h3>补充执行信息</h3>
+          <p class="hint">仅结构化追问雇主，不是聊天。</p>
+          <form id="clarify-form"></form>
+          <button type="button" id="btn-clarify" class="btn primary full">提交补充</button>
+        </div>
+
+        <div id="employer-spec" class="glass-card hidden">
+          <div class="card-label">Step 3 · 确认托管</div>
+          <h3>任务卡片预览</h3>
+          <div id="spec-preview" class="task-spec-card"></div>
+          <button type="button" id="btn-pay" class="btn primary full">确认金额并托管付款</button>
+        </div>
+
+        <div id="employer-status" class="glass-card hidden">
+          <div class="card-label">进行中</div>
+          <h3>订单进度</h3>
+          <div id="status-badge" class="badge"></div>
+          <p id="status-detail" class="status-detail"></p>
+          <button type="button" id="btn-refresh-task" class="btn ghost full">刷新状态</button>
+        </div>
+      </section>
+
+      <section id="panel-worker" class="panel">
+        <div class="glass-card">
+          <div class="card-label">听单模式</div>
+          <h3>等待推送 · 先接先得</h3>
+          <p class="hint">无任务大厅。开启听单后，仅接收 AI 派单 Push。</p>
+          <div class="row">
+            <button type="button" id="btn-online" class="btn primary">开始听单</button>
+            <button type="button" id="btn-offline" class="btn ghost hidden">停止听单</button>
+          </div>
+          <p id="worker-wallet" class="wallet-pill"></p>
+        </div>
+
+        <div id="worker-inbox" class="inbox-list">
+          <p class="empty" id="inbox-empty">暂无推送 — 请保持听单开启</p>
+        </div>
+
+        <div id="worker-active" class="glass-card hidden">
+          <div class="card-label">执行中</div>
+          <h3>标准任务卡片</h3>
+          <div id="worker-card" class="task-spec-card"></div>
+          <label class="field-label">交付照片（演示）</label>
+          <input type="text" id="delivery-photo" placeholder="cat-bowl.jpg" />
+          <button type="button" id="btn-submit" class="btn primary full">提交交付 · 验货放款</button>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <section id="how" class="how-section">
+    <h2 class="section-title">How it works · 如何运作</h2>
+    <div class="steps">
+      <article class="step">
+        <span class="step-num">1</span>
+        <h3>雇主一句话发布</h3>
+        <p>AI 解析意图、定价、生成 TaskSpec。缺信息只问雇主。</p>
+      </article>
+      <article class="step">
+        <span class="step-num">2</span>
+        <h3>托管后精准派单</h3>
+        <p>5km 内技能匹配的雇员收到 Push，无需浏览抢单大厅。</p>
+      </article>
+      <article class="step">
+        <span class="step-num">3</span>
+        <h3>听单接单执行</h3>
+        <p>查看标准卡片，按 SOP 完成，全程不与雇主聊天。</p>
+      </article>
+      <article class="step">
+        <span class="step-num">4</span>
+        <h3>AI 验货自动放款</h3>
+        <p>提交凭证后规则+AI 验货，通过即结算到钱包。</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="trust-section">
+    <article class="trust-card">
+      <span class="trust-icon">🔒</span>
+      <h4>资金托管</h4>
+      <p>完成前托管，验货通过再放款</p>
+    </article>
+    <article class="trust-card">
+      <span class="trust-icon">🤖</span>
+      <h4>AI 中控</h4>
+      <p>解析、澄清、验货全自动</p>
+    </article>
+    <article class="trust-card">
+      <span class="trust-icon">📋</span>
+      <h4>标准卡片</h4>
+      <p>工人无脑执行，零沟通摩擦</p>
+    </article>
+    <article class="trust-card">
+      <span class="trust-icon">⚡</span>
+      <h4>听单优先</h4>
+      <p>像网约车一样等单接单</p>
+    </article>
+  </section>
+
+  <footer class="footer">
+    <p>AutoDo · 极简众包演示 · 视觉参考 <a href="https://rentahuman.ai/" target="_blank" rel="noopener">RentAHuman</a></p>
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>
