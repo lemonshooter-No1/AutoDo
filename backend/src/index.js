@@ -4,6 +4,9 @@ import { fileURLToPath } from "url";
 import { v4 as uuid } from "uuid";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const AMAP_REST_API_KEY = "75b6644c3fc46e7742a2fdabbb7b37f4";
+const amapGeoCache = new Map();
+
 import {
   applyClarifications,
   clarifyQuestions,
@@ -120,16 +123,77 @@ const PUBLIC_STATUSES = new Set([
   "completed",
 ]);
 
-function toBountyItem(task) {
+function normalizeAddressForGeocode(address) {
+  if (!address) return "";
+  return address
+    .split("→")[0]
+    .split("-")[0]
+    .split("/")[0]
+    .replace(/\(.*?\)/g, "")
+    .trim();
+}
+
+async function geocodeAddress(address) {
+  const normalized = normalizeAddressForGeocode(address);
+  if (!normalized || normalized === "远程") return null;
+  if (amapGeoCache.has(normalized)) return amapGeoCache.get(normalized);
+
+  const url = new URL("https://restapi.amap.com/v3/geocode/geo");
+  url.searchParams.set("address", normalized);
+  url.searchParams.set("city", "全国");
+  url.searchParams.set("key", AMAP_REST_API_KEY);
+
+  try {
+    const res = await fetch(url);
+    const data = await res.json();
+    if (data?.status === "1" && Array.isArray(data.geocodes) && data.geocodes.length) {
+      const first = data.geocodes[0];
+      const [lng, lat] = String(first.location || "").split(",").map(Number);
+      if (Number.isFinite(lng) && Number.isFinite(lat)) {
+        const geo = {
+          lng,
+          lat,
+          formattedAddress: first.formatted_address || first.formattedAddress || normalized,
+        };
+        amapGeoCache.set(normalized, geo);
+        return geo;
+      }
+    }
+  } catch (e) {
+    console.warn("AMap geocode failed:", normalized, e.message);
+  }
+
+  amapGeoCache.set(normalized, null);
+  return null;
+}
+
+async function toBountyItem(task) {
   const spec = task.spec || {};
   const loc = spec.location || {};
+  const locationText = spec.is_online ? "远程" : loc.address || "—";
+  let locationLat = Number.isFinite(loc.lat) ? loc.lat : null;
+  let locationLng = Number.isFinite(loc.lng) ? loc.lng : null;
+  let locationFormatted = locationText;
+
+  if (!spec.is_online && (!Number.isFinite(locationLat) || !Number.isFinite(locationLng))) {
+    const geo = await geocodeAddress(locationText);
+    if (geo) {
+      locationLat = geo.lat;
+      locationLng = geo.lng;
+      locationFormatted = geo.formattedAddress || locationText;
+    }
+  }
+
   return {
     id: task.id,
     title: spec.title || "任务",
     summary: (spec.summary || task.raw_input || "").slice(0, 200),
     task_type: spec.task_type || "general",
     price_cents: task.escrow_cents || spec.suggested_price_cents || 0,
-    location: spec.is_online ? "远程" : loc.address || "—",
+    location: locationText,
+    location_formatted: locationFormatted,
+    location_lat: locationLat,
+    location_lng: locationLng,
     status: task.status,
     open: task.status === "dispatching",
     created_at: task.created_at,
@@ -137,7 +201,7 @@ function toBountyItem(task) {
   };
 }
 
-function listBounties(req, res) {
+async function listBounties(req, res) {
   const sort = req.query.sort === "price" ? "price" : "new";
   const state = db.read();
   let tasks = Object.values(state.tasks).filter((t) => PUBLIC_STATUSES.has(t.status));
@@ -152,15 +216,16 @@ function listBounties(req, res) {
     tasks.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
   }
 
-  res.json({ items: tasks.map(toBountyItem), total: tasks.length });
+  const items = await Promise.all(tasks.map((task) => toBountyItem(task)));
+  res.json({ items, total: tasks.length });
 }
 
-function getBounty(req, res) {
+async function getBounty(req, res) {
   const task = getTask(db.read(), req.params.id);
   if (!task || !PUBLIC_STATUSES.has(task.status)) {
     return res.status(404).json({ error: "任务不存在或未公开发布" });
   }
-  res.json(toBountyItem(task));
+  res.json(await toBountyItem(task));
 }
 
 app.get("/bounties", listBounties);
