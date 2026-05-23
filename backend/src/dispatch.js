@@ -1,3 +1,5 @@
+import { reputationScore } from "./reputation.js";
+
 const RADIUS_KM = 5;
 const PUSH_TOP_N = 5;
 
@@ -42,7 +44,11 @@ export function dispatchTask(state, task) {
     if (dist <= RADIUS_KM) candidates.push({ w, dist });
   }
 
-  candidates.sort((a, b) => (a.dist ?? 0) - (b.dist ?? 0));
+  candidates.sort((a, b) => {
+    const repDiff = reputationScore(b.w) - reputationScore(a.w);
+    if (repDiff !== 0) return repDiff;
+    return (a.dist ?? 0) - (b.dist ?? 0);
+  });
   for (const { w } of candidates.slice(0, PUSH_TOP_N)) {
     const exists = state.inbox.some(
       (i) => i.worker_id === w.id && i.task_id === task.id

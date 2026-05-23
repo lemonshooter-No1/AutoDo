@@ -12,6 +12,10 @@ import {
 } from "./ai.js";
 import { dispatchTask } from "./dispatch.js";
 import { seedSampleBounties } from "./seed-samples.js";
+import {
+  recomputeAllReputations,
+  recomputeUserReputation,
+} from "./reputation.js";
 import { db, getTask, getUser, upsertTask, upsertUser } from "./store.js";
 
 const app = express();
@@ -97,10 +101,12 @@ app.post("/tasks/:id/confirm-payment", (req, res) => {
 
   const amount = req.body.amount_cents ?? task.spec.suggested_price_cents;
   task.escrow_cents = amount;
+  task.paid_at = new Date().toISOString();
   task.status = "escrowed";
-  task.updated_at = new Date().toISOString();
+  task.updated_at = task.paid_at;
   dispatchTask(state, task);
   upsertTask(state, task);
+  recomputeUserReputation(state, task.employer_id);
   db.write(state);
   res.json(taskResponse(task));
 });
@@ -336,10 +342,14 @@ app.post("/workers/:wid/tasks/:tid/submit", (req, res) => {
   const payout = task.escrow_cents - fee;
   worker.wallet_balance_cents = (worker.wallet_balance_cents || 0) + payout;
   task.delivery = delivery;
+  task.verification_confidence = confidence;
+  task.completed_at = new Date().toISOString();
   task.status = "completed";
-  task.updated_at = new Date().toISOString();
+  task.updated_at = task.completed_at;
   upsertUser(state, worker);
   upsertTask(state, task);
+  recomputeUserReputation(state, task.employer_id);
+  recomputeUserReputation(state, task.worker_id);
   db.write(state);
 
   res.json({
@@ -389,6 +399,7 @@ app.post("/dev/seed", (_req, res) => {
       }
     }
   }
+  recomputeAllReputations(state);
   db.write(state);
   res.json({
     ok: true,
@@ -398,12 +409,46 @@ app.post("/dev/seed", (_req, res) => {
   });
 });
 
+/** 内部运维：查询信誉（勿接入前端） */
+app.get("/internal/reputation/:userId", (req, res) => {
+  const state = db.read();
+  const user = getUser(state, req.params.userId);
+  if (!user) return res.status(404).json({ error: "用户不存在" });
+  const rep = recomputeUserReputation(state, user.id);
+  db.write(state);
+  res.json({
+    user_id: user.id,
+    role: user.role,
+    reputation: rep,
+  });
+});
+
+app.post("/internal/reputation/recompute", (_req, res) => {
+  const state = db.read();
+  recomputeAllReputations(state);
+  db.write(state);
+  const summary = Object.fromEntries(
+    Object.entries(state.users).map(([id, u]) => [
+      id,
+      {
+        role: u.role,
+        score: u.reputation_internal?.score,
+        label: u.reputation_internal?.label,
+      },
+    ])
+  );
+  res.json({ ok: true, users: summary });
+});
+
 // 静态页面放最后，避免干扰 API
 app.use(express.static(path.join(__dirname, "..", "public")));
 
 const PORT = Number(process.env.PORT) || 8000;
 
 const server = app.listen(PORT, () => {
+  const state = db.read();
+  recomputeAllReputations(state);
+  db.write(state);
   console.log(`AutoDo  http://127.0.0.1:${PORT}  （前端 + API）`);
 });
 

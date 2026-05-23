@@ -6,6 +6,7 @@
 
 - [MVP 需求（六步闭环）](docs/PROJECT_REQUIREMENTS.md)
 - [**两人协作开发指南**](docs/COLLABORATION.md) ← 和队友一起看
+- [信誉评级（内部，不对前端展示）](docs/REPUTATION.md)
 
 ## 和队友一起开发（简要）
 
