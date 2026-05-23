@@ -5,6 +5,8 @@ import os
 import re
 from typing import Any
 
+import requests
+
 from app.schemas import DeliverableSpec, LocationSpec, TaskSpec, TimeWindow
 
 # 澄清字段 → 展示文案
@@ -80,6 +82,46 @@ def _build_steps(spec: TaskSpec) -> list[str]:
 
 def parse_employer_input(raw: str) -> TaskSpec:
     """① 意图解析 → TaskSpec"""
+    # If a SILICON_FLOW_API_KEY is provided, prefer the DeepSeek model for parsing
+    api_key = os.getenv("SILICON_FLOW_API_KEY")
+    api_base = os.getenv("SILICON_FLOW_API_BASE", "https://api.siliconflow.cn/v1")
+    if api_key:
+        try:
+            url = f"{api_base}/models/DeepSeek-V4-Flash/parse"
+            payload = {"input": raw, "instructions": "提取任务类型、地点、时间、预算建议，并指出是否缺少执行所需的信息；返回标准化字段：task_type, title, summary, time, location, suggested_price_cents, missing_fields。中文返回。"}
+            headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+            resp = requests.post(url, headers=headers, json=payload, timeout=6)
+            if resp.ok:
+                data = resp.json()
+                # Expecting model to return a standardized JSON; provide safe fallbacks
+                task_type = data.get("task_type") or _guess_task_type(raw)
+                is_online = task_type == "digital" or bool(re.search(r"线上|远程", raw))
+                spec = TaskSpec(
+                    task_type=task_type,
+                    title=data.get("title") or ("上门喂猫" if task_type == "pet_feeding" else "同城任务"),
+                    summary=data.get("summary") or raw[:200],
+                    time_window=_extract_time(data.get("time") or raw),
+                    location=LocationSpec(address=data.get("location") or _extract_address(raw)),
+                    skills=data.get("skills") or (["pet_care"] if task_type == "pet_feeding" else ["errand"]),
+                    estimated_minutes=data.get("estimated_minutes") or (30 if task_type == "pet_feeding" else 45),
+                    suggested_price_cents=int(data.get("suggested_price_cents") or (8000 if task_type == "pet_feeding" else 6000)),
+                    is_online=is_online,
+                )
+                spec.steps = data.get("steps") or _build_steps(spec)
+                spec.deliverables = [
+                    DeliverableSpec(
+                        type=("photo" if not is_online else "file"),
+                        description=(data.get("deliverable_desc") or ("猫粮盆与宠物现状" if task_type == "pet_feeding" else "任务完成凭证")),
+                    )
+                ]
+                spec.missing_fields = data.get("missing_fields") or _missing_for_executable(spec, raw)
+                spec.executable_ready = len(spec.missing_fields) == 0
+                return spec
+        except Exception:
+            # On any error, fall back to the local heuristic parser
+            pass
+
+    # Fallback: original lightweight parser
     task_type = _guess_task_type(raw)
     is_online = task_type == "digital" or bool(re.search(r"线上|远程", raw))
 
