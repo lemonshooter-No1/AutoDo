@@ -1,0 +1,772 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>行动矩阵 · Action Matrix</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app.css" />
+
+  <!-- Tailwind Play CDN with config -->
+  <script>
+    window.tailwind = {
+      config: {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              'neutral-950': '#03040a',
+              'glass-border': '#0f1720'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React + ReactDOM + Babel (for JSX in-browser) -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    html, body, #root { height: 100%; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at top, rgba(163, 230, 53, 0.09), transparent 32%),
+        linear-gradient(180deg, #050505 0%, #090909 48%, #050505 100%);
+      color: #f4f4f5;
+      font-family: Inter, system-ui, -apple-system, sans-serif;
+    }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); border-radius: 999px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+  </style>
+</head>
+<body class="antialiased text-slate-100 bg-neutral-950">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useMemo, useState } = React;
+
+    const cx = (...parts) => parts.filter(Boolean).join(' ');
+
+    const buttonBase = 'inline-flex items-center justify-center whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition-all duration-200';
+    const cardShell = 'rounded-[16px] border border-white/10 bg-[rgba(255,255,255,0.04)] transition-all duration-200';
+
+    function Icon({ name, className }) {
+      const common = {
+        xmlns: 'http://www.w3.org/2000/svg',
+        fill: 'none',
+        viewBox: '0 0 24 24',
+        stroke: 'currentColor',
+        strokeWidth: 1.8,
+        strokeLinecap: 'round',
+        strokeLinejoin: 'round',
+        className,
+      };
+
+      const glyphs = {
+        radar: (
+          <>
+            <circle cx="12" cy="12" r="3.25" />
+            <circle cx="12" cy="12" r="8.5" />
+            <path d="M4.9 19.1A10 10 0 0 1 4 12" />
+            <path d="M19.1 4.9A10 10 0 0 1 20 12" />
+          </>
+        ),
+        'scan-search': (
+          <>
+            <path d="m21 21-4.34-4.34" />
+            <circle cx="11" cy="11" r="6" />
+            <path d="M11 8v6" />
+            <path d="M8 11h6" />
+          </>
+        ),
+        camera: (
+          <>
+            <path d="M14.5 4 12.9 2.5a2 2 0 0 0-1.3-.5H8.4a2 2 0 0 0-1.7 1L5.9 4" />
+            <path d="M4 7h16a2 2 0 0 1 2 2v8a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3V9a2 2 0 0 1 2-2" />
+            <circle cx="12" cy="13" r="3.5" />
+          </>
+        ),
+        'chevron-down': <path d="m6 9 6 6 6-6" />,
+        activity: <path d="M22 12h-4l-3 8-4-16-3 8H2" />,
+        package: (
+          <>
+            <path d="m7.5 4.2 9 5.1" />
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+            <path d="M3.29 7 12 12l8.71-5" />
+            <path d="M12 22V12" />
+          </>
+        ),
+        route: (
+          <>
+            <path d="M6 19a3 3 0 1 0 0-6" />
+            <path d="M18 11a3 3 0 1 0 0-6" />
+            <path d="M6 13c0-3.3 2.7-6 6-6h1" />
+            <path d="M13 7h5" />
+            <path d="M6 13v6" />
+          </>
+        ),
+        'wand-sparkles': (
+          <>
+            <path d="m12.5 4.5 7 7" />
+            <path d="M11 6 6 11" />
+            <path d="m13 11 4-4" />
+            <path d="M6 22l4-4" />
+            <path d="M17 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z" />
+            <path d="M5 3l1 2 2 1-2 1-1 2-1-2-2-1 2-1 1-2Z" />
+          </>
+        )
+      };
+
+      return <svg {...common}>{glyphs[name]}</svg>;
+    }
+
+    function Switcher({ mode, onChange }) {
+      return (
+        <div className="inline-flex rounded-full border border-white/10 bg-white/5 p-1 backdrop-blur-md shadow-[0_0_0_1px_rgba(255,255,255,0.02)]">
+          <button
+            onClick={() => onChange('A')}
+            aria-pressed={mode === 'A'}
+            className={cx(
+              'rounded-full px-6 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap',
+              mode === 'A' ? 'bg-neutral-800 text-lime-400 shadow-[0_0_18px_rgba(163,230,53,0.08)]' : 'text-neutral-400 hover:text-neutral-200'
+            )}
+          >
+            顺手帮
+          </button>
+          <button
+            onClick={() => onChange('B')}
+            aria-pressed={mode === 'B'}
+            className={cx(
+              'rounded-full px-6 py-2 text-sm font-medium transition-all duration-200 whitespace-nowrap',
+              mode === 'B' ? 'bg-neutral-800 text-cyan-400 shadow-[0_0_18px_rgba(34,211,238,0.08)]' : 'text-neutral-400 hover:text-neutral-200'
+            )}
+          >
+            悬赏令
+          </button>
+        </div>
+      );
+    }
+
+    function Pill({ children, tone = 'lime' }) {
+      const toneClass = tone === 'lime'
+        ? 'bg-lime-400/10 text-lime-400 border-lime-400/30'
+        : 'bg-cyan-400/10 text-cyan-300 border-cyan-400/30';
+      return (
+        <span className={cx('inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold tracking-wide', toneClass)}>
+          {children}
+        </span>
+      );
+    }
+
+    function Shell({ title, subtitle, children, accent = 'lime' }) {
+      return (
+        <section className="space-y-5">
+          <header className="mx-auto w-full max-w-[960px] px-0">
+            <div className={cx('mb-2 text-[11px] uppercase tracking-[0.32em]', accent === 'lime' ? 'text-lime-400/70' : 'text-cyan-300/70')}>{subtitle}</div>
+            <h2 className="text-2xl font-bold tracking-tight text-white">{title}</h2>
+          </header>
+          {children}
+        </section>
+      );
+    }
+
+    function RadarStrip({ from, to, onFrom, onTo, onScan }) {
+      return (
+        <div className={cx(cardShell, 'p-4 hover:border-lime-400/35 hover:shadow-[0_2px_24px_rgba(0,0,0,0.24)]')}>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div className="min-w-0 flex-1">
+              <div className="mb-2 flex items-center gap-2 text-lime-400">
+                <Icon name="radar" className="h-4 w-4" />
+                <span className="text-sm font-semibold">顺路匹配雷达</span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto]">
+                <input
+                  value={from}
+                  onChange={(e) => onFrom(e.target.value)}
+                  placeholder="起点"
+                  className="h-11 rounded-[12px] border border-white/10 bg-black/35 px-4 text-sm text-white outline-none placeholder:text-neutral-500 focus:border-lime-500/45"
+                />
+                <input
+                  value={to}
+                  onChange={(e) => onTo(e.target.value)}
+                  placeholder="终点"
+                  className="h-11 rounded-[12px] border border-white/10 bg-black/35 px-4 text-sm text-white outline-none placeholder:text-neutral-500 focus:border-lime-500/45"
+                />
+                <button
+                  onClick={onScan}
+                  className="h-11 whitespace-nowrap rounded-[12px] border border-lime-400/25 bg-lime-400/10 px-4 py-1.5 text-sm font-semibold text-lime-400 transition-all hover:border-lime-400/45 hover:bg-lime-400/15"
+                >
+                  扫描顺路任务
+                </button>
+              </div>
+            </div>
+            <div className="rounded-[14px] border border-white/10 bg-[rgba(255,255,255,0.03)] px-4 py-3 text-xs text-neutral-400 lg:min-w-72">
+              <div className="mb-1 text-lime-400">当前匹配建议</div>
+              <div>实验室 → 宿舍：存在 3 条顺路派单，优先级已排序。</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function DataStat({ label, value, hint, tone = 'lime' }) {
+      const valueClass = tone === 'cyan' ? 'text-cyan-400' : 'text-lime-400';
+      return (
+        <div className={cx(cardShell, 'p-4 hover:border-white/20 hover:shadow-[0_2px_24px_rgba(0,0,0,0.2)]')}>
+          <div className="text-xs text-neutral-400">{label}</div>
+          <div className={cx('mt-2 text-2xl font-semibold', valueClass)}>{value}</div>
+          <div className="mt-1 text-xs text-neutral-500">{hint}</div>
+        </div>
+      );
+    }
+
+    function TaskCardA({ item, onAccept, onOpen }) {
+      return (
+        <article onClick={() => onOpen && onOpen(item)} className="group flex h-full min-h-[118px] cursor-pointer flex-col rounded-[16px] border border-white/10 bg-[rgba(255,255,255,0.04)] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-lime-400/35 hover:shadow-[0_2px_18px_rgba(0,0,0,0.18)]">
+          <div className="flex items-start justify-between gap-4">
+            <Pill tone="lime">{item.tag}</Pill>
+            <div className="text-xs font-semibold text-lime-400">{item.status}</div>
+          </div>
+          <div className="mt-3 flex-1">
+            <h3 className="text-[1rem] font-semibold leading-6 text-white">{item.title}</h3>
+            <p className="mt-1.5 line-clamp-2 text-[0.875rem] leading-6 text-neutral-400">{item.desc}</p>
+          </div>
+          <div className="mt-4 flex items-end justify-between gap-4 border-t border-white/10 pt-4">
+            <div className="text-[1.05rem] font-bold tracking-tight text-lime-400">¥{item.price}</div>
+            <div className="flex flex-col items-end gap-2 text-right text-xs text-neutral-400">
+              <div>{item.distance}</div>
+              <div>{item.time}</div>
+              <button
+                onClick={(e) => { e.stopPropagation(); onAccept(item); }}
+                className={`${buttonBase} border border-lime-400/25 bg-transparent px-4 py-1.5 text-[11px] text-lime-400 hover:bg-lime-400/10`}
+              >
+                接单前往
+              </button>
+            </div>
+          </div>
+        </article>
+      );
+    }
+
+    function TaskCardB({ item, expanded, onToggle, onOpen, forceCyan = false }) {
+      const toneIsCyan = forceCyan || (item.statusTone && item.statusTone.includes('cyan'));
+      return (
+        <article className={cx(
+          'flex h-full min-h-[118px] flex-col rounded-[16px] border border-white/10 bg-[rgba(255,255,255,0.04)] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/20 hover:shadow-[0_2px_18px_rgba(0,0,0,0.18)]',
+          expanded ? (toneIsCyan ? 'border-cyan-400/30' : 'border-lime-400/30') : ''
+        )}>
+          <div className="flex items-start justify-between gap-4">
+            <Pill tone={toneIsCyan ? 'cyan' : 'lime'}>{item.tag}</Pill>
+            <div className={cx('text-xs font-semibold', toneIsCyan ? 'text-cyan-400' : item.statusTone)}>{item.status}</div>
+          </div>
+          <div className="mt-3 flex items-start gap-3">
+            <div className={cx('mt-1 text-xl', toneIsCyan ? 'text-cyan-400' : (item.statusTone || 'text-lime-400'))}>{item.icon}</div>
+            <div className="min-w-0 flex-1">
+              <h3 className="text-[1rem] font-semibold leading-6 text-white">{item.title}</h3>
+              <p className="mt-1.5 line-clamp-2 text-[0.875rem] leading-6 text-neutral-400">{item.subtitle}</p>
+            </div>
+          </div>
+
+          <div className="mt-4 flex-1 border-t border-white/10 pt-3 text-sm text-neutral-400">{item.meta}</div>
+
+          <div className="mt-auto flex items-center justify-between gap-4 pt-3">
+            <div className="text-xs text-neutral-500">{item.hint}</div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (item.disabled) return;
+                if (item.kind === 'expand') {
+                  onOpen && onOpen(item);
+                } else if (item.kind === 'action') {
+                  item.onPrimaryAction && item.onPrimaryAction();
+                }
+              }}
+              disabled={item.disabled}
+              className={cx(
+                buttonBase,
+                item.disabled
+                  ? 'cursor-not-allowed border border-white/10 bg-white/5 text-neutral-500'
+                  : toneIsCyan
+                    ? 'border border-cyan-400/25 bg-cyan-400/10 text-cyan-400 hover:bg-cyan-400/15'
+                    : 'border border-lime-400/25 bg-lime-400/10 text-lime-400 hover:bg-lime-400/15'
+              )}
+            >
+              {item.actionLabel}
+            </button>
+          </div>
+        </article>
+      );
+    }
+
+    function Modal({ open, onClose, title, children }) {
+      if (!open) return null;
+      return (
+        <div className="fixed inset-0 z-60 flex items-center justify-center">
+          <div onClick={onClose} className="absolute inset-0 bg-black/72 backdrop-blur-[3px]" />
+          <div className="relative z-70 w-[min(960px,94%)] rounded-[20px] border border-white/10 bg-[#0d0d0d] p-6 shadow-[0_18px_50px_rgba(0,0,0,0.55)]">
+            <div className="flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-[11px] uppercase tracking-[0.28em] text-neutral-400/70">二级菜单</div>
+                <div className="mt-2 text-[1.1rem] font-semibold text-white truncate">{title}</div>
+              </div>
+              <button onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-xl text-neutral-400 transition-colors hover:bg-white/10 hover:text-white">×</button>
+            </div>
+            <div className="mt-4">{children}</div>
+          </div>
+        </div>
+      );
+    }
+
+    function destroyActionMap() {
+      return undefined;
+    }
+
+    function initActionMap(lat, lng, title) {
+      return { lat, lng, title };
+    }
+
+    function MapPreview({ item }) {
+      return (
+        <div className="relative overflow-hidden rounded-[20px] border border-white/10 bg-[#dfe6ef]">
+          <svg viewBox="0 0 800 520" className="block h-[280px] w-full">
+            <defs>
+              <linearGradient id="mapSky" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#eef3f8" />
+                <stop offset="100%" stopColor="#d8e1ea" />
+              </linearGradient>
+              <filter id="pinShadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="10" stdDeviation="8" floodColor="#0b1a2f" floodOpacity="0.25" />
+              </filter>
+            </defs>
+            <rect width="800" height="520" fill="url(#mapSky)" />
+            <rect x="0" y="0" width="220" height="520" fill="#c6efbc" />
+            <path d="M0 102 L220 160 L220 210 L0 156 Z" fill="#a8d89a" opacity="0.9" />
+            <path d="M0 260 L800 260" stroke="#b9c5d1" strokeWidth="10" opacity="0.65" />
+            <path d="M0 288 L800 288" stroke="#ffffff" strokeWidth="4" strokeDasharray="18 14" opacity="0.88" />
+            <path d="M120 30 L290 200" stroke="#8f6ad6" strokeWidth="5" opacity="0.85" />
+            <path d="M145 38 L305 198" stroke="#ffffff" strokeWidth="2" opacity="0.9" />
+            <path d="M170 20 L380 232" stroke="#7fb7ff" strokeWidth="3" opacity="0.55" />
+            <rect x="520" y="120" width="180" height="88" rx="18" fill="#f8fafc" opacity="0.92" />
+            <rect x="300" y="322" width="180" height="88" rx="18" fill="#f8fafc" opacity="0.92" />
+            <rect x="610" y="360" width="112" height="78" rx="18" fill="#f8fafc" opacity="0.92" />
+            <circle cx="420" cy="230" r="20" fill="#2b8cff" opacity="0.18" />
+            <path d="M400 188c-16 0-28 13-28 29 0 18 28 54 28 54s28-36 28-54c0-16-12-29-28-29zm0 40a11 11 0 1 1 0-22 11 11 0 0 1 0 22z" fill="#2f80ed" filter="url(#pinShadow)" />
+            <circle cx="640" cy="182" r="6" fill="#f59e0b" />
+            <circle cx="664" cy="182" r="6" fill="#22c55e" />
+            <circle cx="688" cy="182" r="6" fill="#ef4444" />
+            <text x="536" y="176" fontSize="26" fill="#5b6574" fontWeight="700">{item.location || '任务地点'}</text>
+            <text x="88" y="448" fontSize="28" fill="#404b5a" fontWeight="700">地图预览</text>
+            <text x="586" y="452" fontSize="20" fill="#6c7788" fontWeight="700">坐标已解析</text>
+          </svg>
+          <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/85 backdrop-blur-sm">
+            地图预览
+          </div>
+          <div className="absolute bottom-4 left-4 right-4 flex items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/65 px-4 py-3 text-xs text-neutral-200 backdrop-blur-sm">
+            <span>{item.location || '任务地点'}</span>
+            <span className="text-neutral-400">{Number.isFinite(item.location_lat) ? `${item.location_lat.toFixed(4)}, ${item.location_lng.toFixed(4)}` : '未解析坐标'}</span>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [mode, setMode] = useState('A');
+      const [from, setFrom] = useState('实验室');
+      const [to, setTo] = useState('宿舍');
+      const [accepted, setAccepted] = useState(null);
+      const [expandedId, setExpandedId] = useState(null);
+      const [modalItem, setModalItem] = useState(null);
+
+      const c2cTasks = useMemo(() => ([
+        {
+          id: 'a1',
+          tag: '跑腿',
+          status: '急单',
+          title: '东门丰巢拿快递到瑞钦楼3层',
+          desc: '东门丰巢拿快递到瑞钦楼3层。',
+          price: 5,
+          distance: '300m',
+          time: '10分钟前'
+        },
+        {
+          id: 'a2',
+          tag: '借物',
+          status: '热单',
+          title: '21教二楼借一根Type-C线半小时',
+          desc: '21教二楼借一根Type-C线半小时。',
+          price: 3,
+          distance: '50m',
+          time: '6分钟前'
+        },
+        {
+          id: 'a3',
+          tag: '代买',
+          status: '顺路',
+          title: '帮带一杯冰美式到图书馆东区',
+          desc: '顺路带一杯冰美式到图书馆东区。',
+          price: 8,
+          distance: '120m',
+          time: '18分钟前'
+        },
+        {
+          id: 'a4',
+          tag: '互助',
+          status: '热单',
+          title: '宿舍下雨了，求帮忙关一下302的窗户',
+          desc: '宿舍下雨了，求帮忙关一下302的窗户。',
+          price: 10,
+          distance: '220m',
+          time: '28分钟前'
+        },
+        {
+          id: 'a5',
+          tag: '代办',
+          status: '预约',
+          title: '明早8点帮忙在自习室占个座',
+          desc: '明早8点帮忙在自习室占个座。',
+          price: 5,
+          distance: '180m',
+          time: '45分钟前'
+        },
+        {
+          id: 'a6',
+          tag: '跑腿',
+          status: '热单',
+          title: '食堂打包一份黄焖鸡送到实训中心',
+          desc: '食堂打包一份黄焖鸡送到实训中心。',
+          price: 6,
+          distance: '520m',
+          time: '52分钟前'
+        }
+      ]), []);
+
+      const macroStats = useMemo(() => ([
+        { label: '今日悬赏总数', value: '2,304', hint: '全网实时流入' },
+        { label: '待采集坐标', value: '18,742', hint: '地理与图像样本' },
+        { label: '最高单价', value: '¥168', hint: '高净值任务峰值' },
+        { label: '今日已发放赏金', value: '¥28,450', hint: '实时结算至微信零钱' }
+      ]), []);
+
+      const b2bTasks = useMemo(() => ([
+        {
+          id: 'b1',
+          tag: '商业探针',
+          status: '招募中',
+          statusTone: 'text-lime-400',
+          icon: '🎯',
+          title: '农夫山泉冰柜排面巡检',
+          subtitle: '需 150 个点位，覆盖天津市连锁便利店与冷柜陈列。',
+          meta: '需 150 个点位',
+          hint: '商业巡检 · 重点补位',
+          actionLabel: '查看点位坐标 ▼',
+          kind: 'expand',
+          expandTitle: '最近的 3 个点位',
+          details: ['天津大学北门全家便利店', '海光寺 7-11 便利店', '河西区友谊路全家门店'],
+          expandedActionLabel: '调起相机拍摄',
+          onExpandedAction: () => alert('演示：调起相机拍摄'),
+          location: '天津大学北门',
+          location_lat: 39.1432,
+          location_lng: 117.1955,
+          steps: ['按标注拍摄柜门整体', '拍摄货架与陈列面', '上传 1 张近景与 1 张远景']
+        },
+        {
+          id: 'b2',
+          tag: '环境语料',
+          status: '执行中',
+          statusTone: 'text-cyan-400',
+          icon: '🛣️',
+          title: '雨后路面积水反光采集',
+          subtitle: '需 100 张，优先记录低洼路口、桥下和排水口附近视角。',
+          meta: '需 100 张',
+          hint: '气象数据 · 反光校验',
+          actionLabel: '调起相机拍摄',
+          kind: 'action',
+          onPrimaryAction: () => alert('演示：调起相机拍摄'),
+          location: '海光寺周边低洼路段',
+          location_lat: 39.1468,
+          location_lng: 117.2041,
+          steps: ['采集近景反光 50 张', '记录位置与时间戳', '上传原图与注释']
+        },
+        {
+          id: 'b3',
+          tag: '语音大模型',
+          status: '招募中',
+          statusTone: 'text-lime-400',
+          icon: '🗣️',
+          title: '天津方言俚语录音采样',
+          subtitle: '需 200 份语料，按提示词自然朗读，采集清晰、无明显噪音。',
+          meta: '需 200 份',
+          hint: '语音打捞 · 高质量录音',
+          actionLabel: '查看语料库并录音',
+          kind: 'expand',
+          expandTitle: '语料库示例',
+          details: ['“你瞅啥，走着？”', '“这嘎达挺得劲儿的。”', '“麻烦您给我挪个地方。”'],
+          expandedActionLabel: '开始录音采样',
+          onExpandedAction: () => alert('演示：开始录音采样'),
+          location: '海光寺地铁站附近',
+          location_lat: 39.1468,
+          location_lng: 117.2041,
+          steps: ['听读提示词 3 次', '选择安静环境录制', '上传原始 wav 文件']
+        },
+        {
+          id: 'b4',
+          tag: '具身数据',
+          status: '招募中',
+          statusTone: 'text-lime-400',
+          icon: '🤖',
+          title: '第一人称·单手开门动作',
+          subtitle: '机器人训练数据集，需 500 份视频，按示范动作录制，关注手部与门把交互。',
+          meta: '需 500 份视频',
+          hint: '具身智能 · 动作学习',
+          actionLabel: '查看示范视频',
+          kind: 'expand',
+          expandTitle: '示范视频目录',
+          details: ['门把压下开门', '推门并侧身通过', '回身关门动作'],
+          expandedActionLabel: '开始录制示范',
+          onExpandedAction: () => alert('演示：开始录制示范'),
+          location: '某教学楼门廊',
+          location_lat: 39.1395,
+          location_lng: 117.1992,
+          steps: ['按示范动作拍摄 3 个角度', '保证光线充足并对焦门把手']
+        },
+        {
+          id: 'b5',
+          tag: '地图基建',
+          status: '急单招募',
+          statusTone: 'text-amber-400',
+          icon: '📍',
+          title: '高德POI·瑞钦楼东侧封路核实',
+          subtitle: '需 1 张现场图，用于核实道路临时封闭与 POI 纠错。',
+          meta: '需 1 张现场图',
+          hint: '地图纠错 · 现场核验',
+          actionLabel: '导航至核实点',
+          kind: 'action',
+          onPrimaryAction: () => alert('演示：导航至核实点'),
+          location: '瑞钦楼东侧',
+          location_lat: 39.1429,
+          location_lng: 117.1967
+        },
+        {
+          id: 'b6',
+          tag: '实地防骗',
+          status: '已满员',
+          statusTone: 'text-neutral-400',
+          icon: '🍗',
+          title: '外卖幽灵店·某炸鸡店实地查验',
+          subtitle: '已进入验收队列，当前仅开放结算确认，不再新增采集。',
+          meta: '已满员 · 等待验收',
+          hint: '生活品控 · 当前排队中',
+          actionLabel: '验收结算中',
+          kind: 'disabled',
+          disabled: true,
+          onPrimaryAction: null
+        }
+      ]), []);
+
+      const headerA = (
+        <div className="mx-auto w-full max-w-5xl rounded-xl border border-white/10 bg-[radial-gradient(circle_at_50%_40%,rgba(163,230,53,0.12)_0%,rgba(21,21,21,0.92)_40%,#050505_76%,#000_100%)] px-4 py-3 shadow-[inset_0_0_30px_rgba(0,0,0,0.45)]">
+          <div className="flex min-h-[88px] md:min-h-[96px] flex-col items-center justify-center text-center">
+            <div className="mb-1.5 inline-flex items-center gap-2 rounded-full border border-lime-400/16 bg-lime-400/8 px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.28em] text-lime-400">
+              <Icon name="radar" className="h-3.5 w-3.5" />
+              Radar Active
+            </div>
+            <div className="max-w-2xl text-lg font-semibold leading-6 text-lime-400 md:text-xl md:leading-7">
+              雷达开启：附近 1 公里内有 12 个微光求助
+            </div>
+            <div className="mt-1 text-[11px] text-neutral-400">人情味、近距离、顺手就能完成的校园互助。</div>
+          </div>
+        </div>
+      );
+
+      const renderA = () => (
+        <>
+          {headerA}
+          <div className="mx-auto grid w-full max-w-[960px] grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {c2cTasks.map((item) => (
+              <TaskCardA key={item.id} item={item} onAccept={(task) => setAccepted(task)} onOpen={(i) => setModalItem(i)} />
+            ))}
+          </div>
+          <div className="mx-auto w-full max-w-[960px]">
+            <RadarStrip
+              from={from}
+              to={to}
+              onFrom={setFrom}
+              onTo={setTo}
+              onScan={() => alert(`扫描 ${from} → ${to} 的顺路任务`)}
+            />
+          </div>
+        </>
+      );
+
+      const renderB = () => (
+        <>
+          <div className="mx-auto grid w-full max-w-[960px] gap-3 md:grid-cols-2 xl:grid-cols-4">
+            {macroStats.map((stat) => <DataStat key={stat.label} tone="cyan" {...stat} />)}
+          </div>
+          <div className="mx-auto grid w-full max-w-[960px] grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {b2bTasks.map((item) => (
+              <TaskCardB
+                key={item.id}
+                item={item}
+                forceCyan={true}
+                expanded={expandedId === item.id}
+                onToggle={(id) => setExpandedId(expandedId === id ? null : id)}
+                onOpen={(i) => setModalItem({ ...i, forceCyan: true })}
+              />
+            ))}
+          </div>
+        </>
+      );
+
+      return (
+        <div className="min-h-screen px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-[960px] space-y-8">
+            <header className="space-y-3">
+              <div className="flex justify-center">
+                <Switcher mode={mode} onChange={setMode} />
+              </div>
+            </header>
+
+            <Shell
+              subtitle={mode === 'A' ? 'C2C / Nearby Help' : 'B2B / AI Data Capture'}
+              title={mode === 'A' ? '顺手帮任务流' : '悬赏令任务流'}
+              accent={mode === 'A' ? 'lime' : 'cyan'}
+            >
+              {mode === 'A' ? renderA() : renderB()}
+            </Shell>
+
+          </div>
+
+          {accepted && (
+            <div className="fixed bottom-5 left-1/2 z-50 w-[calc(100%-1.5rem)] max-w-3xl -translate-x-1/2 rounded-2xl border border-white/10 bg-[#101010]/95 p-4 shadow-[0_20px_60px_rgba(0,0,0,0.55)] backdrop-blur-md">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <div className="text-xs uppercase tracking-[0.28em] text-neutral-500">已选中任务</div>
+                  <div className="mt-1 text-base font-semibold text-white">{accepted.title}</div>
+                  <div className="mt-1 text-sm text-neutral-400">{accepted.desc}</div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl font-extrabold text-lime-400">¥{accepted.price}</div>
+                  <button
+                    onClick={() => { alert('接单成功，准备前往'); setAccepted(null); }}
+                    className="whitespace-nowrap rounded-xl bg-lime-400 px-4 py-1.5 text-sm font-semibold text-black transition-all hover:bg-lime-300"
+                  >
+                    接单前往
+                  </button>
+                  <button
+                    onClick={() => setAccepted(null)}
+                    className="whitespace-nowrap rounded-xl border border-white/10 px-4 py-1.5 text-sm text-neutral-300 transition-all hover:border-white/20 hover:bg-white/5"
+                  >
+                    关闭
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <Modal open={!!modalItem} onClose={() => { setModalItem(null); destroyActionMap(); }} title={modalItem?.title}>
+            {modalItem && (
+              <div className="space-y-4">
+                <div className="rounded-[22px] border border-white/8 bg-[#111111] p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-4">
+                    <Pill tone={modalItem.kind === 'action' ? 'cyan' : 'lime'}>{modalItem.tag}</Pill>
+                    <div className={cx('text-sm font-semibold', modalItem.statusTone)}>{modalItem.status}</div>
+                  </div>
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="text-2xl font-bold tracking-tight text-white md:text-[2rem]">{modalItem.title}</div>
+                      <div className="mt-2 max-w-3xl text-sm leading-6 text-neutral-300">{modalItem.subtitle || modalItem.desc}</div>
+                    </div>
+                    {modalItem.price && (
+                      <div className="rounded-2xl border border-lime-400/15 bg-lime-400/8 px-4 py-3 text-left sm:text-right">
+                        <div className={cx('text-[11px] uppercase tracking-[0.24em]', modalItem && (modalItem.forceCyan || (modalItem.statusTone && modalItem.statusTone.includes('cyan'))) ? 'text-cyan-300/70' : 'text-lime-400/70')}>报酬</div>
+                        <div className={cx('mt-1 text-3xl font-extrabold', modalItem && (modalItem.forceCyan || (modalItem.statusTone && modalItem.statusTone.includes('cyan'))) ? 'text-cyan-400' : 'text-lime-400')}>¥{modalItem.price}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                  <div className="space-y-4">
+                    {modalItem.location && (
+                      <div className="rounded-[22px] border border-white/8 bg-[#111111] p-5">
+                        <div className={cx('text-[11px] font-semibold uppercase tracking-[0.24em]', modalItem && (modalItem.forceCyan || (modalItem.statusTone && modalItem.statusTone.includes('cyan'))) ? 'text-cyan-300/70' : 'text-lime-400/70')}>任务地点</div>
+                        <div className="mt-3 text-lg font-semibold text-white">{modalItem.location}</div>
+                        <div className="mt-2 text-sm text-neutral-400">{Number.isFinite(modalItem.location_lat) ? `已解析坐标：${modalItem.location_lat.toFixed(4)}, ${modalItem.location_lng.toFixed(4)}` : '未解析坐标，按文字地址判断即可'}</div>
+                      </div>
+                    )}
+
+                    {modalItem.expandTitle && (
+                      <div className="rounded-[22px] border border-white/8 bg-[#111111] p-5">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300/70">{modalItem.expandTitle}</div>
+                        {modalItem.details && (
+                          <ul className="mt-4 space-y-2">
+                            {modalItem.details.map((d) => (
+                              <li key={d} className="flex items-start gap-3 rounded-xl border border-white/5 bg-white/[0.04] px-3 py-3 text-sm text-neutral-200">
+                                <span className="mt-1 text-cyan-400">•</span>
+                                <span>{d}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-4">
+                    {modalItem.location_lat && (
+                      <div className="rounded-[22px] border border-white/8 bg-[#111111] p-4">
+                        <div className={cx('mb-3 inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em]', modalItem && (modalItem.forceCyan || (modalItem.statusTone && modalItem.statusTone.includes('cyan'))) ? 'border border-cyan-400/20 bg-cyan-400/10 text-cyan-400' : 'border border-lime-400/20 bg-lime-400/10 text-lime-400')}>
+                          地图交互预览
+                        </div>
+                        <MapPreview item={modalItem} />
+                        <div className="mt-3 text-xs text-neutral-400">当前环境下用本地预览替代空白地图，至少保证内容可见。</div>
+                      </div>
+                    )}
+
+                    {modalItem.steps && (
+                      <div className="rounded-[22px] border border-white/8 bg-[#111111] p-5">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-neutral-400">任务步骤</div>
+                        <ul className="mt-4 space-y-2">
+                          {modalItem.steps.map((s) => (
+                            <li key={s} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.04] px-3 py-2.5 text-sm text-neutral-300">
+                              <span className={cx('h-2 w-2 rounded-full', modalItem && modalItem.forceCyan ? 'bg-cyan-400' : (modalItem && modalItem.statusTone ? modalItem.statusTone.replace('text-', 'bg-') : 'bg-lime-400'))}></span>
+                              <span>{s}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3 pt-1">
+                  {modalItem.expandedActionLabel && (
+                    <button onClick={() => { setModalItem(null); modalItem.onExpandedAction && modalItem.onExpandedAction(); destroyActionMap(); }} className="rounded-full bg-cyan-400 px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-cyan-300">{modalItem.expandedActionLabel}</button>
+                  )}
+                  {modalItem.actionLabel && modalItem.kind === 'action' && (
+                    <button onClick={() => { setModalItem(null); modalItem.onPrimaryAction && modalItem.onPrimaryAction(); destroyActionMap(); }} className="rounded-full bg-cyan-400 px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-cyan-300">{modalItem.actionLabel}</button>
+                  )}
+                  <button onClick={() => { setModalItem(null); destroyActionMap(); }} className="rounded-full border border-white/10 px-5 py-2.5 text-sm text-neutral-300 transition-colors hover:border-white/20 hover:bg-white/5">关闭</button>
+                </div>
+              </div>
+            )}
+          </Modal>
+        </div>
+      );
+    }
+
+    
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
