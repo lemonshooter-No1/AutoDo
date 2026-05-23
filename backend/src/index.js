@@ -13,7 +13,15 @@ import {
   parseEmployerInput,
   verifyDelivery,
 } from "./ai.js";
-import { dispatchTask } from "./dispatch.js";
+import { dispatchTask, previewMatch } from "./dispatch.js";
+import { recomputeCategoryPrices } from "./matching/category-prices.js";
+import { getMatchingConfig } from "./matching/config.js";
+import {
+  recomputeAllWorkerStats,
+  recordAccept,
+  recordComplete,
+  recordMiss,
+} from "./matching/stats.js";
 import { seedSampleBounties } from "./seed-samples.js";
 import {
   recomputeAllReputations,
@@ -380,6 +388,16 @@ app.post("/workers/:wid/tasks/:tid/accept", (req, res) => {
   task.status = "in_progress";
   inbox.accepted = true;
   task.updated_at = new Date().toISOString();
+
+  for (const row of state.inbox) {
+    if (row.task_id !== task.id || row.worker_id === req.params.wid) continue;
+    if (row.accepted) continue;
+    const other = getUser(state, row.worker_id);
+    if (other) recordMiss(state, other, task, { explore: row.explore });
+  }
+
+  const worker = getUser(state, req.params.wid);
+  if (worker) recordAccept(state, worker, task, { explore: inbox.explore });
   upsertTask(state, task);
   db.write(state);
   res.json(taskResponse(task));
@@ -413,6 +431,7 @@ app.post("/workers/:wid/tasks/:tid/submit", (req, res) => {
   task.updated_at = task.completed_at;
   upsertUser(state, worker);
   upsertTask(state, task);
+  recordComplete(state, worker, task);
   recomputeUserReputation(state, task.employer_id);
   recomputeUserReputation(state, task.worker_id);
   db.write(state);
@@ -465,6 +484,8 @@ app.post("/dev/seed", (_req, res) => {
     }
   }
   recomputeAllReputations(state);
+  recomputeCategoryPrices(state, getMatchingConfig());
+  recomputeAllWorkerStats(state);
   db.write(state);
   res.json({
     ok: true,
@@ -486,6 +507,40 @@ app.get("/internal/reputation/:userId", (req, res) => {
     role: user.role,
     reputation: rep,
   });
+});
+
+/** 内部：预览任务匹配打分（勿接入前端） */
+app.get("/internal/match/preview", (req, res) => {
+  const taskId = req.query.task_id;
+  if (!taskId) {
+    return res.status(400).json({ error: "缺少 task_id 查询参数" });
+  }
+  const state = db.read();
+  const task = getTask(state, taskId);
+  if (!task) return res.status(404).json({ error: "任务不存在" });
+  res.json(previewMatch(state, task));
+});
+
+app.post("/internal/match/recompute-stats", (_req, res) => {
+  const state = db.read();
+  const config = getMatchingConfig();
+  recomputeCategoryPrices(state, config);
+  recomputeAllWorkerStats(state);
+  db.write(state);
+  res.json({
+    ok: true,
+    workers_updated: Object.keys(state.users).filter(
+      (id) => state.users[id].role === "worker"
+    ).length,
+    category_prices: state.matching_meta?.category_price_cents,
+  });
+});
+
+app.get("/internal/match/category-prices", (_req, res) => {
+  const state = db.read();
+  const prices = recomputeCategoryPrices(state, getMatchingConfig());
+  db.write(state);
+  res.json({ category_prices: prices });
 });
 
 app.post("/internal/reputation/recompute", (_req, res) => {
@@ -513,6 +568,8 @@ const PORT = Number(process.env.PORT) || 8000;
 const server = app.listen(PORT, () => {
   const state = db.read();
   recomputeAllReputations(state);
+  recomputeCategoryPrices(state, getMatchingConfig());
+  recomputeAllWorkerStats(state);
   db.write(state);
   console.log(`AutoDo  http://127.0.0.1:${PORT}  （前端 + API）`);
 });

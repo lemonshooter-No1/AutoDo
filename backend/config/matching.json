@@ -1,0 +1,46 @@
+{
+  "radius_km": 5,
+  "radius_km_urgent": 8,
+  "max_concurrent": 2,
+  "max_push_per_worker_day": 20,
+  "weights": {
+    "offline_normal": { "wc": 0.35, "wa": 0.3, "wp": 0.2, "wd": 0.15 },
+    "offline_urgent": { "wc": 0.3, "wa": 0.25, "wp": 0.15, "wd": 0.3 },
+    "online_digital": { "wc": 0.4, "wa": 0.3, "wp": 0.25, "wd": 0.05 }
+  },
+  "dist_alpha": 0.35,
+  "pay_beta": 4,
+  "policy": {
+    "k_min": 2,
+    "k_max": 5,
+    "coverage_target": 0.7,
+    "epsilon_explore": 0.1,
+    "serial_price_threshold_cents": 15000,
+    "serial_timeout_sec": 120,
+    "urgent_price_cents": 12000,
+    "urgent_max_minutes": 45
+  },
+  "category_price": {
+    "min_samples": 3,
+    "floor_percentile": 0.1,
+    "ceiling_percentile": 0.9
+  },
+  "category_price_cents": {
+    "pet_feeding": { "floor": 5000, "ceiling": 15000 },
+    "errand": { "floor": 4000, "ceiling": 12000 },
+    "queue": { "floor": 8000, "ceiling": 25000 },
+    "digital": { "floor": 5000, "ceiling": 30000 },
+    "general": { "floor": 4000, "ceiling": 10000 }
+  },
+  "explore": {
+    "epsilon": 0.1,
+    "always_one_if_pool": true,
+    "cold_start_max_pushes": 5,
+    "min_uncertainty": 0.35,
+    "min_sample_vs_last": 0.75,
+    "deterministic_seed": true
+  },
+  "accept_model": { "b0": -0.5, "b1": 2.2, "b2": 0.8, "b3": 1.0, "b4": 1.5, "b5": 1.0 },
+  "complete_model": { "c0": -0.8, "c1": 2.0, "c2": 1.2, "c3": 1.5, "c4": 0.6, "c5": 1.8, "c6": 1.0 },
+  "bayesian_prior": { "m": 5, "global_accept_rate": 0.25 }
+}
