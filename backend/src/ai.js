@@ -5,8 +5,43 @@ const CLARIFY_LABELS = {
   pet_notes: "宠物注意事项",
 };
 
-export function clarifyQuestions(missing) {
-  return missing.map((f) => ({ field: f, label: CLARIFY_LABELS[f] || f }));
+function getClarifyLabel(field, spec) {
+  if (field === "building_detail") {
+    if (spec?.task_type === "errand") {
+      return "具体取件点/楼号/门牌号（如：2号楼、201室、3单元）";
+    }
+    if (spec?.task_type === "queue") {
+      return "具体办事点/楼号/门牌号";
+    }
+    if (spec?.task_type === "pet_feeding") {
+      return "楼栋/单元/门牌号";
+    }
+    return "具体地点信息（楼栋/单元/门牌号）";
+  }
+
+  if (field === "access_code") {
+    return spec?.task_type === "pet_feeding"
+      ? "门禁密码/钥匙/开门方式"
+      : "门禁密码或进门方式";
+  }
+
+  if (field === "contact_phone") {
+    return "现场联系人电话";
+  }
+
+  if (field === "pet_notes") {
+    return "宠物注意事项";
+  }
+
+  return CLARIFY_LABELS[field] || field;
+}
+
+const ADDRESS_PREFIX_RE = /^(?:请|帮我|麻烦|需要)?(?:到|去|前往|送到|送至|在)?\s*/;
+const ADDRESS_LEADING_NOISE_RE = /^(?:明天|明日|今天|后天|今晚|今早|今晨|明早|早上|上午|中午|下午|晚上|\d{1,2}(?:[:：]\d{2})?(?:点半|点)?|帮我|麻烦|请|需要|到|去|前往|在|上门|顺路|顺便|先|约|大概)\s*/;
+const ADDRESS_ACTION_RE = /喂|取|送|跑腿|拿|买|拍|寄|修|装|接|清洁|打扫|照顾|顺便|然后|再/;
+
+export function clarifyQuestions(spec, missing) {
+  return missing.map((f) => ({ field: f, label: getClarifyLabel(f, spec) }));
 }
 
 function guessTaskType(text) {
@@ -17,10 +52,28 @@ function guessTaskType(text) {
 }
 
 function extractAddress(text) {
-  const m = text.match(
-    /([\u4e00-\u9fff]{2,8}(?:区|县|市))?[\u4e00-\u9fff\d]+(?:小区|大厦|广场|路|街|号)[^\s，,。]*/
+  const raw = (text || "").trim();
+  if (!raw) return "";
+
+  let normalized = raw.replace(ADDRESS_PREFIX_RE, "");
+  let previous = "";
+  while (normalized !== previous) {
+    previous = normalized;
+    normalized = normalized.replace(ADDRESS_LEADING_NOISE_RE, "");
+  }
+
+  const punctuationIndex = normalized.search(/[，,。.!?；;\n]/);
+  const actionIndex = normalized.search(ADDRESS_ACTION_RE);
+  const endCandidates = [punctuationIndex, actionIndex].filter((index) => index >= 0);
+  const end = endCandidates.length ? Math.min(...endCandidates) : normalized.length;
+  const candidate = normalized.slice(0, end).trim().replace(ADDRESS_LEADING_NOISE_RE, "");
+  return hasSpecificAddress(candidate) ? candidate : "";
+}
+
+function hasSpecificAddress(address) {
+  return /(小区|园区|花园|苑|园|大厦|广场|写字楼|公寓|医院|学校|商场|门店|路|街|巷|道|号楼|栋|单元|室|层)/.test(
+    address || ""
   );
-  return m ? m[0] : "";
 }
 
 function extractTime(text) {
@@ -37,17 +90,40 @@ function extractTime(text) {
 function missingForExecutable(spec, text) {
   const missing = [];
   const addr = spec.location?.address || "";
-  if (!addr || addr.length < 4) missing.push("building_detail");
-  if (spec.task_type === "pet_feeding") {
-    const combined = text + (spec.location?.access_notes || "");
-    if (!/门禁|密码|钥匙|门卫|开门/.test(combined)) missing.push("access_code");
+  const combined = text + (spec.location?.access_notes || "");
+
+  // 线上任务无需澄清
+  if (spec.task_type === "digital" || spec.is_online) {
+    return [];
   }
-  if (spec.task_type !== "digital" && !spec.is_online) {
-    if (!/\d+号|\d+栋|\d+单元|\d+室/.test(addr) && !missing.includes("building_detail")) {
+
+  // 对于上门服务（喂猫），需要进门方式和明确地址
+  if (spec.task_type === "pet_feeding") {
+    if (!hasSpecificAddress(addr)) {
       missing.push("building_detail");
     }
+    if (!/门禁|密码|钥匙|门卫|开门/.test(combined)) {
+      missing.push("access_code");
+    }
+    return [...new Set(missing)];
   }
-  return [...new Set(missing)];
+
+  // 对于取件、跑腿类任务（errand），需要更具体的位置信息
+  // "中关村大街" 不够具体，需要追问楼号、几号楼等
+  if (spec.task_type === "errand") {
+    // 检查是否有明确的编号/层级关键词（号、栋、单元、室等）
+    if (!/\d+号|\d+栋|\d+单元|\d+室|\d+层|[1-9]([0-9])?号楼/.test(addr)) {
+      missing.push("building_detail");
+    }
+    return missing;
+  }
+
+  // 其他线下任务，检查是否有足够具体的地点
+  if (!hasSpecificAddress(addr)) {
+    missing.push("building_detail");
+  }
+
+  return missing;
 }
 
 function buildSteps(spec) {

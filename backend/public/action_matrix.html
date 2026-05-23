@@ -56,6 +56,19 @@
   </style>
 </head>
 <body class="antialiased text-slate-100 bg-neutral-950">
+  <nav class="nav">
+    <a href="/" class="logo">
+      <span class="logo-mark">◇</span>
+      AutoDo
+    </a>
+    <div class="nav-links">
+      <a href="/">主页</a>
+      <a href="/action_matrix.html">任务列表</a>
+      <a href="/employer.html">雇主中心</a>
+      <a href="/worker.html">雇员中心</a>
+    </div>
+  </nav>
+
   <div id="root"></div>
 
   <script type="text/babel">
@@ -355,11 +368,21 @@
 
     function initActionMap(lat, lng, title) {
       destroyActionMap();
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
-      if (typeof AMap === 'undefined') return null;
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        console.log('initActionMap: Invalid coordinates', { lat, lng });
+        return null;
+      }
+      if (typeof AMap === 'undefined') {
+        console.warn('initActionMap: AMap not loaded, will use SVG fallback');
+        return null;
+      }
       try {
         const container = document.getElementById('amap-action-map');
-        if (!container) return null;
+        if (!container) {
+          console.warn('initActionMap: Container #amap-action-map not found');
+          return null;
+        }
+        console.log('initActionMap: Initializing AMap at', { lat, lng, title });
         AMap.plugin(['AMap.ToolBar'], () => {
           try {
             _action_map = new AMap.Map(container, {
@@ -368,21 +391,25 @@
               viewMode: '2D',
               resizeEnable: true,
             });
+            // Once map is created, elevate container above SVG
+            container.style.zIndex = '10';
+            container.style.pointerEvents = 'auto';
             _action_marker = new AMap.Marker({ position: [lng, lat], anchor: 'bottom-center', title });
             _action_map.add(_action_marker);
             _action_map.addControl(new AMap.ToolBar({ position: 'RB' }));
             _action_map.setFitView([_action_marker]);
+            console.log('initActionMap: AMap initialized successfully');
             _action_map_timer = setTimeout(() => {
               if (!_action_map || !document.body.contains(container)) return;
               try { _action_map.resize(); } catch(e){}
             }, 600);
           } catch (err) {
-            console.warn('AMap init inner error', err);
+            console.error('AMap init inner error:', err);
           }
         });
         return { map: _action_map, marker: _action_marker };
       } catch (err) {
-        console.warn('initActionMap failed', err);
+        console.error('initActionMap failed:', err);
         return null;
       }
     }
@@ -405,8 +432,8 @@
 
       return (
         <div className="relative overflow-hidden rounded-[20px] border border-white/10 bg-[#dfe6ef]">
-          <div id="amap-action-map" className="absolute inset-0 z-10" style={{minHeight: 200}} />
-          <svg viewBox="0 0 800 420" className="block h-[200px] w-full">
+          <div id="amap-action-map" className="absolute inset-0" style={{minHeight: 200, pointerEvents: 'none'}} />
+          <svg viewBox="0 0 800 420" className="block h-[200px] w-full relative z-0">
             <defs>
               <linearGradient id="mapSky" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#eef3f8" />
@@ -436,8 +463,10 @@
             <text x="88" y="448" fontSize="28" fill="#404b5a" fontWeight="700">地图预览</text>
             <text x="586" y="452" fontSize="20" fill="#6c7788" fontWeight="700">坐标已解析</text>
           </svg>
-          {/* if AMap initializes it will render into #amap-action-map; show SVG as backdrop */}
-          <style>{`#amap-action-map > .amap-box { display: block; } #amap-action-map:empty { display: none; }`}</style>
+          {/* SVG 后备方案：当 AMap 加载失败或未初始化时显示 */}
+          <style>{`
+            #amap-action-map { z-index: 0; pointer-events: none; transition: z-index 0.2s; }
+          `}</style>
           <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full border border-white/15 bg-black/45 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/85 backdrop-blur-sm">
             地图预览
           </div>

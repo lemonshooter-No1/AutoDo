@@ -35,7 +35,12 @@ function renderClarifyForm(questions) {
   for (const q of questions || []) {
     const div = document.createElement("div");
     div.className = "clarify-field";
-    div.innerHTML = `<label>${q.label}</label><input name="${q.field}" required />`;
+    const inputId = `clarify-${q.field}`;
+    div.innerHTML = `
+      <label for="${inputId}">${q.label}</label>
+      <input id="${inputId}" name="${q.field}" required />
+      <button type="button" class="btn ghost voice-trigger" data-voice-target="${inputId}">按住说话</button>
+    `;
     form.appendChild(div);
   }
 }

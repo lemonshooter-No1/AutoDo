@@ -445,6 +445,28 @@ input:focus {
 
 textarea { resize: vertical; min-height: 88px; }
 
+.voice-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  margin: -0.15rem 0 0.85rem;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.85rem;
+  touch-action: none;
+}
+
+.voice-trigger.recording {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.55);
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.voice-trigger:disabled {
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
 .field-label {
   display: block;
   font-size: 0.8rem;

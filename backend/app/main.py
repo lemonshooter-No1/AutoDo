@@ -49,15 +49,16 @@ def _task_response(task: Task) -> TaskResponse:
         employer_id=task.employer_id,
         worker_id=task.worker_id,
         raw_input=task.raw_input,
-        spec=_load_spec(task),
-        clarifications=json.loads(task.clarifications_json or "{}"),
-        escrow_cents=task.escrow_cents,
-        push_sent_to=json.loads(task.push_sent_json or "[]"),
-        created_at=task.created_at,
-        updated_at=task.updated_at,
-    )
+        spec = _load_spec(task)
+        if not spec.executable_ready:
+            raise HTTPException(400, "任务尚未达到可执行标准，请继续澄清")
 
-
+        employer = db.get(User, task.employer_id)
+        amount = body.amount_cents or spec.suggested_price_cents
+        escrow_service.mock_escrow_hold(db, task, employer, amount)
+        # Dispatch strategy depends on spec.flow ('A' or 'B')
+        pushed = dispatch_service.dispatch_task(db, task, flow=getattr(spec, 'flow', 'A'))
+        return _task_response(task)
 # --- 雇主：发布（①②）---
 
 @app.post("/tasks", response_model=dict)
@@ -82,7 +83,7 @@ def create_task(body: CreateTaskRequest, db: Session = Depends(get_db)):
     resp = _task_response(task)
     out = resp.model_dump()
     if not spec.executable_ready:
-        out["clarify_questions"] = clarify_questions(spec.missing_fields)
+        out["clarify_questions"] = clarify_questions(spec, body.raw_input)
     return out
 
 
@@ -113,7 +114,7 @@ def clarify_task(task_id: str, body: ClarifyRequest, db: Session = Depends(get_d
     resp = _task_response(task)
     out = resp.model_dump()
     if not spec.executable_ready:
-        out["clarify_questions"] = clarify_questions(spec.missing_fields)
+        out["clarify_questions"] = clarify_questions(spec, task.raw_input)
     return out
 
 
@@ -134,11 +135,17 @@ def confirm_payment(
     if not spec.executable_ready:
         raise HTTPException(400, "任务尚未达到可执行标准，请继续澄清")
 
+    # 如果用户提交了自定义价格，则更新 spec
+    if body.suggested_price_cents and body.suggested_price_cents > 0:
+        spec.suggested_price_cents = body.suggested_price_cents
+        task.spec_json = spec.model_dump_json()
+
     employer = db.get(User, task.employer_id)
     amount = body.amount_cents or spec.suggested_price_cents
     escrow_service.mock_escrow_hold(db, task, employer, amount)
 
     pushed = dispatch_service.dispatch_task(db, task)
+    db.commit()
     return _task_response(task)
 
 

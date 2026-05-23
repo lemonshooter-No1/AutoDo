@@ -46,7 +46,8 @@
       <div id="worker-card" class="task-spec-card"></div>
       <label for="delivery-photo">交付凭证</label>
       <input type="text" id="delivery-photo" placeholder="照片文件名或链接" />
-      <button type="button" id="btn-submit" class="btn primary full">提交完成</button>
+      <button type="button" class="btn ghost voice-trigger" data-voice-target="delivery-photo">按住说话</button>
+      <button type="button" id="btn-submit" class="btn primary full">提交交付</button>
     </section>
 
     <section class="dash-card">
@@ -56,6 +57,7 @@
     </section>
   </main>
 
+  <script src="/voice.js"></script>
   <script type="module" src="/worker.js"></script>
 </body>
 </html>

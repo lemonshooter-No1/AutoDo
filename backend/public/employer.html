@@ -26,6 +26,7 @@
     <section class="dash-card">
       <h2>发布新任务</h2>
       <textarea id="employer-input" rows="3" placeholder="描述需求，例如：明天早上到朝阳区上门喂猫"></textarea>
+      <button type="button" class="btn ghost voice-trigger" data-voice-target="employer-input">按住说话</button>
       <button type="button" id="btn-publish" class="btn primary full">AI 解析并发布</button>
     </section>
 
@@ -56,6 +57,7 @@
     </section>
   </main>
 
+  <script src="/voice.js"></script>
   <script type="module" src="/employer.js"></script>
 </body>
 </html>
