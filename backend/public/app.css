@@ -641,39 +641,6 @@ textarea { resize: vertical; min-height: 88px; }
   color: var(--muted);
 }
 
-/* Trust */
-.trust-section {
-  position: relative;
-  z-index: 1;
-  max-width: 1100px;
-  margin: 0 auto 4rem;
-  padding: 0 1.5rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.trust-card {
-  text-align: center;
-  padding: 1.5rem 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card);
-}
-
-.trust-icon { font-size: 1.5rem; display: block; margin-bottom: 0.5rem; }
-
-.trust-card h4 {
-  margin: 0 0 0.35rem;
-  font-size: 0.95rem;
-}
-
-.trust-card p {
-  margin: 0;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
 .footer {
   position: relative;
   z-index: 1;
