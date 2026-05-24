@@ -1,7 +1,7 @@
 const API = "";
 
-let employerId = "";
-let workerId = "";
+let employerId = "demo-employer";
+let workerId = "demo-worker";
 let currentTaskId = null;
 let activeWorkerTaskId = null;
 let inboxPoll = null;
@@ -220,6 +220,13 @@ $("btn-refresh-task").addEventListener("click", async () => {
   if (!currentTaskId) return;
   const task = await api("GET", `/tasks/${currentTaskId}`);
   renderEmployerStatus(task);
+});
+
+$("btn-new-task").addEventListener("click", () => {
+  $("employer-input").value = "";
+  currentTaskId = null;
+  $("clarify-form").innerHTML = "";
+  showEmployerStep("publish");
 });
 
 async function refreshWallet() {

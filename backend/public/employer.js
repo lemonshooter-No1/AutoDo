@@ -1,6 +1,5 @@
 import {
   api,
-  ensureSeed,
   formatPrice,
   formatTime,
   STATUS_LABEL,
@@ -9,7 +8,7 @@ import {
   toast,
 } from "./common.js";
 
-let employerId = "";
+let employerId = "demo-employer";
 let currentTaskId = null;
 let allTasks = [];
 let filter = "all";
@@ -40,6 +39,53 @@ function renderClarifyForm(questions) {
   }
 }
 
+const DETAIL_STATUS_LABELS = {
+  clarifying: "待补充",
+  awaiting_payment: "待付款",
+  escrowed: "已托管",
+  dispatching: "招募中",
+  in_progress: "进行中",
+  submitted: "验收中",
+  completed: "已完成",
+};
+
+function renderTaskDetail(task) {
+  const spec = task.spec || {};
+  const loc = spec.location || {};
+  const steps = (spec.steps || []).map((s) => `<li>${s}</li>`).join("");
+  const typeLabel = TYPE_LABEL[spec.task_type] || spec.task_type;
+  const price = task.escrow_cents || spec.suggested_price_cents || 0;
+  const statusLabel = DETAIL_STATUS_LABELS[task.status] || task.status;
+
+  const el = $("modal-body");
+  el.innerHTML = `
+    <span class="pill">${typeLabel}</span>
+    <span style="margin-left:8px;font-size:0.78rem;color:var(--muted)">${statusLabel}</span>
+    <h2 style="margin:0.4rem 0 0.2rem">${spec.title || "任务"}</h2>
+    <p class="bounty-price-lg" style="margin:0 0 0.6rem">${formatPrice(price)}</p>
+    <p style="color:var(--muted);margin:0 0 0.6rem;line-height:1.6">${spec.summary || task.raw_input || ""}</p>
+    <div class="location-summary">
+      <div class="location-summary-label">地点</div>
+      <div class="location-summary-value">${loc.address || "—"}</div>
+    </div>
+    ${spec.time_window?.start ? `<p style="font-size:0.85rem;color:var(--dim);margin:0.5rem 0">⏱ ${spec.time_window.start}${spec.time_window.end && spec.time_window.end !== spec.time_window.start ? ' ~ ' + spec.time_window.end : ''}</p>` : ""}
+    ${spec.location?.access_notes ? `<p style="font-size:0.85rem;color:var(--dim)">🔑 ${spec.location.access_notes}</p>` : ""}
+    ${steps ? `<ul style="margin:0.6rem 0 0;padding-left:1.2rem;font-size:0.85rem;color:var(--muted)">${steps}</ul>` : ""}
+    ${task.worker_id ? `<p style="margin-top:0.8rem;font-size:0.85rem"><strong>接单人：</strong>${task.worker_id}</p>` : ""}
+    ${task.push_sent_to?.length ? `<p style="font-size:0.85rem;color:var(--dim)">已推送给 ${task.push_sent_to.length} 名雇员</p>` : ""}
+  `;
+  $("task-detail-modal").showModal();
+}
+
+async function openTaskDetail(taskId) {
+  try {
+    const task = await api("GET", `/tasks/${taskId}`);
+    renderTaskDetail(task);
+  } catch (e) {
+    toast(e.message);
+  }
+}
+
 function renderTaskList() {
   const list = $("employer-tasks");
   const empty = $("employer-empty");
@@ -60,6 +106,7 @@ function renderTaskList() {
   for (const t of filtered) {
     const row = document.createElement("div");
     row.className = "task-row";
+    row.style.cursor = "pointer";
     const doneMark = t.completed ? '<span class="done-check">✓ 已完成</span>' : "";
     row.innerHTML = `
       <div class="task-row-top">
@@ -73,6 +120,7 @@ function renderTaskList() {
       ${t.push_count ? `<p class="task-row-desc">已推送给 ${t.push_count} 人</p>` : ""}
       ${doneMark}
     `;
+    row.addEventListener("click", () => openTaskDetail(t.id));
     list.appendChild(row);
   }
 }
@@ -157,6 +205,11 @@ document.querySelectorAll(".filter-btn").forEach((btn) => {
 });
 
 $("btn-refresh-list").addEventListener("click", () => loadMyTasks().catch((e) => toast(e.message)));
+
+$("modal-close")?.addEventListener("click", () => $("task-detail-modal").close());
+$("task-detail-modal")?.addEventListener("click", (e) => {
+  if (e.target === $("task-detail-modal")) $("task-detail-modal").close();
+});
 
 async function init() {
   await loadMyTasks();

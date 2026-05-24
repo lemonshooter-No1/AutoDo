@@ -118,23 +118,23 @@ export function seedSampleBounties(state) {
     upsertTask(state, {
       id: s.id,
       status: s.status,
-      employer_id: "employer-sample",
-      worker_id: s.status === "in_progress" ? "worker-sample" : null,
+      employer_id: "demo-employer",
+      worker_id: s.status === "in_progress" ? "demo-worker" : null,
       raw_input: s.raw_input,
       spec: { ...s.spec, executable_ready: true, missing_fields: [], deliverables: [] },
       clarifications: {},
       escrow_cents: s.escrow_cents,
-      push_sent_to: ["worker-sample"],
+      push_sent_to: ["demo-worker"],
       delivery: null,
       created_at: ago(i + 2),
       updated_at: pushedAt,
     });
     const exists = state.inbox.some(
-      (row) => row.worker_id === "worker-sample" && row.task_id === s.id
+      (row) => row.worker_id === "demo-worker" && row.task_id === s.id
     );
     if (!exists) {
       state.inbox.push({
-        worker_id: "worker-sample",
+        worker_id: "demo-worker",
         task_id: s.id,
         accepted: s.status === "in_progress",
         pushed_at: pushedAt,

@@ -1,9 +1,26 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { fileURLToPath } from "url";
 import { v4 as uuid } from "uuid";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+const envPath = path.join(__dirname, "..", ".env");
+if (fs.existsSync(envPath)) {
+  const lines = fs.readFileSync(envPath, "utf8").split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx > 0) {
+      const key = trimmed.slice(0, eqIdx).trim();
+      const val = trimmed.slice(eqIdx + 1).trim().replace(/^["']|["']$/g, "");
+      if (!process.env[key]) process.env[key] = val;
+    }
+  }
+}
+
 const AMAP_REST_API_KEY = "75b6644c3fc46e7742a2fdabbb7b37f4";
 const amapGeoCache = new Map();
 
@@ -13,6 +30,7 @@ import {
   parseEmployerInput,
   verifyDelivery,
 } from "./ai.js";
+import { isLLMAvailable } from "./llm.js";
 import { dispatchTask, previewMatch } from "./dispatch.js";
 import { recomputeCategoryPrices } from "./matching/category-prices.js";
 import { getMatchingConfig } from "./matching/config.js";
@@ -49,7 +67,7 @@ function taskResponse(task) {
 }
 
 // ①② 雇主发布
-app.post("/tasks", (req, res) => {
+app.post("/tasks", async (req, res) => {
   const { employer_id, raw_input } = req.body || {};
   const state = db.read();
   const employer = getUser(state, employer_id);
@@ -57,7 +75,7 @@ app.post("/tasks", (req, res) => {
     return res.status(404).json({ error: "雇主不存在" });
   }
 
-  const spec = parseEmployerInput(raw_input);
+  const spec = await parseEmployerInput(raw_input);
   const task = {
     id: uuid(),
     status: spec.executable_ready ? "awaiting_payment" : "clarifying",
@@ -241,11 +259,14 @@ app.get("/bounties/:id", getBounty);
 app.get("/api/bounties", listBounties);
 app.get("/api/bounties/:id", getBounty);
 
-app.get("/tasks/:id", (req, res) => {
+function getTaskById(req, res) {
   const task = getTask(db.read(), req.params.id);
   if (!task) return res.status(404).json({ error: "任务不存在" });
   res.json(taskResponse(task));
-});
+}
+
+app.get("/tasks/:id", getTaskById);
+app.get("/api/tasks/:id", getTaskById);
 
 /** 雇主：我发布的全部任务及完成状态 */
 function listEmployerTasks(req, res) {
@@ -284,6 +305,7 @@ function listWorkerPushes(req, res) {
         task_id: task.id,
         title: task.spec?.title,
         summary: (task.spec?.summary || "").slice(0, 120),
+        task_type: task.spec?.task_type,
         price_cents: task.escrow_cents || task.spec?.suggested_price_cents || 0,
         pushed_at: i.pushed_at,
         accepted: i.accepted,
@@ -525,11 +547,40 @@ const PORT = Number(process.env.PORT) || 8000;
 
 const server = app.listen(PORT, () => {
   const state = db.read();
+
+  if (!state.users["demo-employer"]) {
+    state.users["demo-employer"] = {
+      id: "demo-employer",
+      role: "employer",
+      name: "Demo 雇主",
+      created_at: new Date().toISOString(),
+    };
+  }
+  if (!state.users["demo-worker"]) {
+    state.users["demo-worker"] = {
+      id: "demo-worker",
+      role: "worker",
+      name: "Demo 雇员",
+      skills: ["pet_care", "errand", "digital_labor"],
+      lat: 39.998,
+      lng: 116.47,
+      wallet_balance_cents: 0,
+      is_online: false,
+      created_at: new Date().toISOString(),
+    };
+  }
+
   recomputeAllReputations(state);
   recomputeCategoryPrices(state, getMatchingConfig());
   recomputeAllWorkerStats(state);
+  seedSampleBounties(state);
   db.write(state);
   console.log(`AutoDo  http://127.0.0.1:${PORT}  （前端 + API）`);
+  if (isLLMAvailable()) {
+    console.log(`  LLM: 硅基流动 (${process.env.LLM_MODEL || "Qwen/Qwen3-8B"})`);
+  } else {
+    console.log(`  LLM: 未配置 SILICONFLOW_API_KEY，用规则解析`);
+  }
 });
 
 server.on("error", (err) => {
