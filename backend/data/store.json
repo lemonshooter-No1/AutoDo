@@ -1,0 +1,675 @@
+{
+  "users": {
+    "demo-employer": {
+      "id": "demo-employer",
+      "role": "employer",
+      "name": "Demo 雇主",
+      "created_at": "2026-05-24T03:27:21.005Z",
+      "reputation_internal": {
+        "score": 61,
+        "tier": "standard",
+        "label": "普通雇主",
+        "updated_at": "2026-05-24T03:28:06.133Z",
+        "metrics": {
+          "tasks_published": 7,
+          "tasks_completed": 0,
+          "completion_rate": 0,
+          "avg_payment_hours": 0,
+          "volume_score": 88,
+          "payment_score": 100
+        }
+      }
+    },
+    "demo-worker": {
+      "id": "demo-worker",
+      "role": "worker",
+      "name": "Demo 雇员",
+      "skills": [
+        "pet_care",
+        "errand",
+        "digital_labor"
+      ],
+      "lat": 39.9225,
+      "lng": 116.444,
+      "wallet_balance_cents": 0,
+      "is_online": true,
+      "created_at": "2026-05-24T03:27:21.006Z",
+      "reputation_internal": {
+        "score": 18,
+        "tier": "standard",
+        "label": "普通雇员",
+        "updated_at": "2026-05-24T03:27:21.006Z",
+        "metrics": {
+          "tasks_assigned": 0,
+          "tasks_completed": 0,
+          "tasks_in_progress": 0,
+          "completion_rate": 0,
+          "avg_verification_confidence": null,
+          "volume_score": 0,
+          "quality_score": 50
+        }
+      },
+      "stats_internal": {
+        "version": 2,
+        "by_type": {
+          "pet_feeding": {
+            "push_count": 1,
+            "accept_count": 1,
+            "complete_count": 0,
+            "miss_count": 0,
+            "explore_push_count": 0,
+            "explore_accept_count": 0,
+            "price_sum_cents": 8000,
+            "confidence_sum": 0,
+            "last_push_at": "2026-05-24T03:28:06.133Z",
+            "last_accept_at": "2026-05-24T03:28:13.692Z",
+            "last_complete_at": null
+          }
+        },
+        "totals": {
+          "push_count": 1,
+          "accept_count": 1,
+          "complete_count": 0,
+          "miss_count": 0,
+          "explore_push_count": 0
+        },
+        "push_fatigue_date": "2026-05-24",
+        "push_fatigue_count": 1,
+        "push_ignored_today": 0,
+        "reserve_price_cents": {
+          "pet_feeding": 8000
+        },
+        "explore": {
+          "last_explore_at": null,
+          "explore_accept_rate": null
+        },
+        "updated_at": "2026-05-24T03:28:13.692Z"
+      }
+    }
+  },
+  "tasks": {
+    "sample-feed-cat": {
+      "id": "sample-feed-cat",
+      "status": "dispatching",
+      "employer_id": "demo-employer",
+      "worker_id": null,
+      "raw_input": "明天早上8点朝阳区望京西园喂猫",
+      "spec": {
+        "task_type": "pet_feeding",
+        "title": "上门喂猫",
+        "summary": "望京西园 3 号楼，猫粮在玄关柜，需换水并拍照片",
+        "time_window": {
+          "start": "明天 08:00",
+          "end": "明天 09:00"
+        },
+        "location": {
+          "address": "北京朝阳区望京西园",
+          "lat": 39.998,
+          "lng": 116.47,
+          "access_notes": "门禁 8866"
+        },
+        "skills": [
+          "pet_care"
+        ],
+        "suggested_price_cents": 8500,
+        "steps": [
+          "按门禁进入",
+          "喂食换水",
+          "拍摄猫和食盆照片"
+        ],
+        "is_online": false,
+        "executable_ready": true,
+        "missing_fields": [],
+        "deliverables": []
+      },
+      "clarifications": {},
+      "escrow_cents": 8500,
+      "push_sent_to": [
+        "demo-worker"
+      ],
+      "delivery": null,
+      "created_at": "2026-05-24T01:27:21.007Z",
+      "updated_at": "2026-05-24T02:27:21.007Z"
+    },
+    "sample-feed-dog": {
+      "id": "sample-feed-dog",
+      "status": "dispatching",
+      "employer_id": "demo-employer",
+      "worker_id": null,
+      "raw_input": "周末上午海淀区上门喂狗遛狗",
+      "spec": {
+        "task_type": "pet_feeding",
+        "title": "上门喂狗 + 遛狗 30 分钟",
+        "summary": "中型犬柯基，狗粮在厨房，需遛狗半小时",
+        "time_window": {
+          "start": "周六 10:00",
+          "end": "周六 11:30"
+        },
+        "location": {
+          "address": "北京海淀区中关村大街",
+          "lat": 39.983,
+          "lng": 116.316,
+          "access_notes": "前台代收钥匙"
+        },
+        "skills": [
+          "pet_care"
+        ],
+        "suggested_price_cents": 12000,
+        "steps": [
+          "取钥匙进门",
+          "喂食",
+          "遛狗 30 分钟",
+          "拍照反馈"
+        ],
+        "is_online": false,
+        "executable_ready": true,
+        "missing_fields": [],
+        "deliverables": []
+      },
+      "clarifications": {},
+      "escrow_cents": 12000,
+      "push_sent_to": [
+        "demo-worker"
+      ],
+      "delivery": null,
+      "created_at": "2026-05-24T00:27:21.007Z",
+      "updated_at": "2026-05-24T01:27:21.007Z"
+    },
+    "sample-errand": {
+      "id": "sample-errand",
+      "status": "dispatching",
+      "employer_id": "demo-employer",
+      "worker_id": null,
+      "raw_input": "从国贸取件送到朝阳区三里屯",
+      "spec": {
+        "task_type": "errand",
+        "title": "同城取件送达",
+        "summary": "国贸商城 A 座前台取小型文件袋，送至三里屯 SOHO",
+        "time_window": {
+          "start": "今天 14:00",
+          "end": "今天 16:00"
+        },
+        "location": {
+          "address": "北京朝阳区国贸 → 三里屯",
+          "lat": 39.909,
+          "lng": 116.455,
+          "access_notes": ""
+        },
+        "skills": [
+          "errand"
+        ],
+        "suggested_price_cents": 5500,
+        "steps": [
+          "国贸取件",
+          "打车/地铁送达",
+          "收件人签收拍照"
+        ],
+        "is_online": false,
+        "executable_ready": true,
+        "missing_fields": [],
+        "deliverables": []
+      },
+      "clarifications": {},
+      "escrow_cents": 5500,
+      "push_sent_to": [
+        "demo-worker"
+      ],
+      "delivery": null,
+      "created_at": "2026-05-23T23:27:21.007Z",
+      "updated_at": "2026-05-24T00:27:21.007Z"
+    },
+    "sample-queue": {
+      "id": "sample-queue",
+      "status": "dispatching",
+      "employer_id": "demo-employer",
+      "worker_id": null,
+      "raw_input": "协和医院东区排队取号",
+      "spec": {
+        "task_type": "queue",
+        "title": "医院排队取号",
+        "summary": "早上 7 点前到医院排队，取内科号条拍照发我",
+        "time_window": {
+          "start": "明天 06:30",
+          "end": "明天 08:00"
+        },
+        "location": {
+          "address": "北京东城区协和医院东院",
+          "lat": 39.912,
+          "lng": 116.424,
+          "access_notes": ""
+        },
+        "skills": [
+          "errand"
+        ],
+        "suggested_price_cents": 15000,
+        "steps": [
+          "现场排队",
+          "取号",
+          "拍照发送号条"
+        ],
+        "is_online": false,
+        "executable_ready": true,
+        "missing_fields": [],
+        "deliverables": []
+      },
+      "clarifications": {},
+      "escrow_cents": 15000,
+      "push_sent_to": [
+        "demo-worker"
+      ],
+      "delivery": null,
+      "created_at": "2026-05-23T22:27:21.007Z",
+      "updated_at": "2026-05-23T23:27:21.007Z"
+    },
+    "sample-grocery": {
+      "id": "sample-grocery",
+      "status": "in_progress",
+      "employer_id": "demo-employer",
+      "worker_id": "demo-worker",
+      "raw_input": "超市代购蔬菜水果送到家门口",
+      "spec": {
+        "task_type": "errand",
+        "title": "超市代购送达",
+        "summary": "按清单购买蔬菜水果（清单已私信），送到小区门口",
+        "time_window": {
+          "start": "今天 18:00",
+          "end": "今天 20:00"
+        },
+        "location": {
+          "address": "北京丰台区某小区",
+          "lat": 39.858,
+          "lng": 116.287,
+          "access_notes": ""
+        },
+        "skills": [
+          "errand"
+        ],
+        "suggested_price_cents": 6000,
+        "steps": [
+          "按清单采购",
+          "小票拍照",
+          "送达门口"
+        ],
+        "is_online": false,
+        "executable_ready": true,
+        "missing_fields": [],
+        "deliverables": []
+      },
+      "clarifications": {},
+      "escrow_cents": 6000,
+      "push_sent_to": [
+        "demo-worker"
+      ],
+      "delivery": null,
+      "created_at": "2026-05-23T21:27:21.007Z",
+      "updated_at": "2026-05-23T22:27:21.007Z"
+    },
+    "sample-digital": {
+      "id": "sample-digital",
+      "status": "dispatching",
+      "employer_id": "demo-employer",
+      "worker_id": null,
+      "raw_input": "线下门店拍照 15 家",
+      "spec": {
+        "task_type": "digital",
+        "title": "门店门头拍照",
+        "summary": "按给定列表拍摄 15 家门店门头照，上传网盘",
+        "time_window": {
+          "start": "本周内",
+          "end": "本周日"
+        },
+        "location": {
+          "address": "远程",
+          "lat": null,
+          "lng": null,
+          "access_notes": ""
+        },
+        "skills": [
+          "digital_labor"
+        ],
+        "suggested_price_cents": 20000,
+        "steps": [
+          "按列表逐家拍摄",
+          "整理文件夹",
+          "上传分享链接"
+        ],
+        "is_online": true,
+        "executable_ready": true,
+        "missing_fields": [],
+        "deliverables": []
+      },
+      "clarifications": {},
+      "escrow_cents": 20000,
+      "push_sent_to": [
+        "demo-worker"
+      ],
+      "delivery": null,
+      "created_at": "2026-05-23T20:27:21.007Z",
+      "updated_at": "2026-05-23T21:27:21.007Z"
+    },
+    "47ac1524-eb3e-46cd-8027-69d297e1b63b": {
+      "id": "47ac1524-eb3e-46cd-8027-69d297e1b63b",
+      "status": "in_progress",
+      "employer_id": "demo-employer",
+      "worker_id": "demo-worker",
+      "raw_input": "明天早上8点帮我到朝阳区XX小区喂一下猫，猫粮在桌子上",
+      "spec": {
+        "task_type": "pet_feeding",
+        "title": "上门喂猫",
+        "summary": "明天早上8点帮我到朝阳区XX小区喂一下猫，猫粮在桌子上",
+        "time_window": {
+          "start": "明天 早上",
+          "end": "明天 早上"
+        },
+        "location": {
+          "address": "1号楼，2单元，101",
+          "lat": 39.9219,
+          "lng": 116.4436,
+          "access_notes": "密码101"
+        },
+        "skills": [
+          "pet_care"
+        ],
+        "estimated_minutes": 30,
+        "suggested_price_cents": 8000,
+        "steps": [
+          "按地址到达，使用雇主提供的进门方式进入",
+          "按说明喂食、换水",
+          "拍摄宠物与食盆现状照片"
+        ],
+        "deliverables": [
+          {
+            "type": "photo",
+            "description": "宠物与食盆现状照片"
+          }
+        ],
+        "executable_ready": true,
+        "missing_fields": [],
+        "is_online": false
+      },
+      "clarifications": {
+        "building_detail": "1号楼，2单元，101",
+        "access_code": "密码101"
+      },
+      "escrow_cents": 8000,
+      "push_sent_to": [
+        "demo-worker"
+      ],
+      "delivery": null,
+      "created_at": "2026-05-24T03:27:53.789Z",
+      "updated_at": "2026-05-24T03:28:13.692Z",
+      "paid_at": "2026-05-24T03:28:06.131Z",
+      "dispatch_policy": "broadcast",
+      "match_profile": "offline_normal",
+      "dispatch_log": {
+        "at": "2026-05-24T03:28:06.133Z",
+        "policy": "broadcast",
+        "task_profile": "offline_normal",
+        "candidate_count": 1,
+        "pushed_count": 1,
+        "category_prices": {
+          "pet_feeding": {
+            "floor": 8100,
+            "ceiling": 11300,
+            "source": "computed",
+            "sample_count": 3,
+            "median": 8500,
+            "updated_at": "2026-05-24T03:28:06.131Z"
+          },
+          "errand": {
+            "floor": 4000,
+            "ceiling": 12000,
+            "source": "default",
+            "sample_count": 2,
+            "updated_at": "2026-05-24T03:28:06.131Z"
+          },
+          "queue": {
+            "floor": 8000,
+            "ceiling": 25000,
+            "source": "default",
+            "sample_count": 1,
+            "updated_at": "2026-05-24T03:28:06.131Z"
+          },
+          "digital": {
+            "floor": 5000,
+            "ceiling": 30000,
+            "source": "default",
+            "sample_count": 1,
+            "updated_at": "2026-05-24T03:28:06.131Z"
+          },
+          "general": {
+            "floor": 4000,
+            "ceiling": 10000,
+            "source": "default",
+            "sample_count": 0,
+            "updated_at": "2026-05-24T03:28:06.131Z"
+          }
+        },
+        "explore_slots": 0,
+        "top": [
+          {
+            "worker_id": "demo-worker",
+            "M": 0.661804633978937,
+            "P_complete": 0.969350205554845,
+            "P_accept": 0.5672088226652424,
+            "S_pay": 0.03126086653783259,
+            "S_dist": 0.9741149461840124,
+            "weights": {
+              "wc": 0.35,
+              "wa": 0.3,
+              "wp": 0.2,
+              "wd": 0.15
+            },
+            "distance_km": 0.07493133640037579,
+            "rank": 1,
+            "explore": false
+          }
+        ]
+      }
+    },
+    "f4335d73-153f-48a4-a52c-142ef3728fb2": {
+      "id": "f4335d73-153f-48a4-a52c-142ef3728fb2",
+      "status": "awaiting_payment",
+      "employer_id": "demo-employer",
+      "worker_id": null,
+      "raw_input": "帮我把咖啡拿上楼，拿到实验室",
+      "spec": {
+        "task_type": "general",
+        "title": "同城任务",
+        "summary": "帮我把咖啡拿上楼，拿到实验室",
+        "time_window": {
+          "start": "",
+          "end": ""
+        },
+        "location": {
+          "address": "帮我把咖啡拿上楼 1号楼，2单元，101",
+          "lat": null,
+          "lng": null,
+          "access_notes": ""
+        },
+        "skills": [
+          "errand"
+        ],
+        "estimated_minutes": 45,
+        "suggested_price_cents": 6000,
+        "steps": [
+          "按任务卡片说明完成",
+          "上传规定交付凭证"
+        ],
+        "deliverables": [
+          {
+            "type": "photo",
+            "description": "任务完成凭证"
+          }
+        ],
+        "executable_ready": true,
+        "missing_fields": [],
+        "is_online": false
+      },
+      "clarifications": {
+        "building_detail": "1号楼，2单元，101"
+      },
+      "escrow_cents": 0,
+      "push_sent_to": [],
+      "delivery": null,
+      "created_at": "2026-05-24T03:29:59.579Z",
+      "updated_at": "2026-05-24T03:30:02.294Z"
+    },
+    "d207d8e9-8ae1-4761-8b05-57241e81ea33": {
+      "id": "d207d8e9-8ae1-4761-8b05-57241e81ea33",
+      "status": "awaiting_payment",
+      "employer_id": "demo-employer",
+      "worker_id": null,
+      "raw_input": "明天早上8点帮我到朝阳区XX小区喂一下猫，猫粮在桌子上",
+      "spec": {
+        "task_type": "pet_feeding",
+        "title": "上门喂猫",
+        "summary": "明天早上8点帮我到朝阳区XX小区喂一下猫，猫粮在桌子上",
+        "time_window": {
+          "start": "明天 早上",
+          "end": "明天 早上"
+        },
+        "location": {
+          "address": "101/1/1/ 1号楼/1单元/101",
+          "lat": 39.9219,
+          "lng": 116.4436,
+          "access_notes": "密码101"
+        },
+        "skills": [
+          "pet_care"
+        ],
+        "estimated_minutes": 30,
+        "suggested_price_cents": 8000,
+        "steps": [
+          "按地址到达，使用雇主提供的进门方式进入",
+          "按说明喂食、换水",
+          "拍摄宠物与食盆现状照片"
+        ],
+        "deliverables": [
+          {
+            "type": "photo",
+            "description": "宠物与食盆现状照片"
+          }
+        ],
+        "executable_ready": true,
+        "missing_fields": [],
+        "is_online": false
+      },
+      "clarifications": {
+        "building_detail": "1号楼/1单元/101",
+        "access_code": "密码101"
+      },
+      "escrow_cents": 0,
+      "push_sent_to": [],
+      "delivery": null,
+      "created_at": "2026-05-24T03:30:30.156Z",
+      "updated_at": "2026-05-24T03:30:59.731Z"
+    }
+  },
+  "inbox": [
+    {
+      "worker_id": "demo-worker",
+      "task_id": "sample-feed-cat",
+      "accepted": false,
+      "pushed_at": "2026-05-24T02:27:21.007Z"
+    },
+    {
+      "worker_id": "demo-worker",
+      "task_id": "sample-feed-dog",
+      "accepted": false,
+      "pushed_at": "2026-05-24T01:27:21.007Z"
+    },
+    {
+      "worker_id": "demo-worker",
+      "task_id": "sample-errand",
+      "accepted": false,
+      "pushed_at": "2026-05-24T00:27:21.007Z"
+    },
+    {
+      "worker_id": "demo-worker",
+      "task_id": "sample-queue",
+      "accepted": false,
+      "pushed_at": "2026-05-23T23:27:21.007Z"
+    },
+    {
+      "worker_id": "demo-worker",
+      "task_id": "sample-grocery",
+      "accepted": true,
+      "pushed_at": "2026-05-23T22:27:21.007Z"
+    },
+    {
+      "worker_id": "demo-worker",
+      "task_id": "sample-digital",
+      "accepted": false,
+      "pushed_at": "2026-05-23T21:27:21.007Z"
+    },
+    {
+      "worker_id": "demo-worker",
+      "task_id": "47ac1524-eb3e-46cd-8027-69d297e1b63b",
+      "accepted": true,
+      "pushed_at": "2026-05-24T03:28:06.133Z",
+      "match_score": 0.661804633978937,
+      "score_breakdown": {
+        "worker_id": "demo-worker",
+        "M": 0.661804633978937,
+        "P_complete": 0.969350205554845,
+        "P_accept": 0.5672088226652424,
+        "S_pay": 0.03126086653783259,
+        "S_dist": 0.9741149461840124,
+        "weights": {
+          "wc": 0.35,
+          "wa": 0.3,
+          "wp": 0.2,
+          "wd": 0.15
+        },
+        "distance_km": 0.07493133640037579,
+        "rank": 1,
+        "explore": false
+      },
+      "offer_mode": "broadcast",
+      "offer_expires_at": null,
+      "explore": false
+    }
+  ],
+  "matching_meta": {
+    "category_price_cents": {
+      "pet_feeding": {
+        "floor": 8100,
+        "ceiling": 11300,
+        "source": "computed",
+        "sample_count": 3,
+        "median": 8500,
+        "updated_at": "2026-05-24T03:28:06.131Z"
+      },
+      "errand": {
+        "floor": 4000,
+        "ceiling": 12000,
+        "source": "default",
+        "sample_count": 2,
+        "updated_at": "2026-05-24T03:28:06.131Z"
+      },
+      "queue": {
+        "floor": 8000,
+        "ceiling": 25000,
+        "source": "default",
+        "sample_count": 1,
+        "updated_at": "2026-05-24T03:28:06.131Z"
+      },
+      "digital": {
+        "floor": 5000,
+        "ceiling": 30000,
+        "source": "default",
+        "sample_count": 1,
+        "updated_at": "2026-05-24T03:28:06.131Z"
+      },
+      "general": {
+        "floor": 4000,
+        "ceiling": 10000,
+        "source": "default",
+        "sample_count": 0,
+        "updated_at": "2026-05-24T03:28:06.131Z"
+      }
+    },
+    "category_prices_updated_at": "2026-05-24T03:28:06.131Z"
+  }
+}

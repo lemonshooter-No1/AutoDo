@@ -4,9 +4,6 @@ backend/.venv/
 __pycache__/
 *.pyc
 
-# Local data (each dev has own local DB)
-backend/data/
-
 # Env & secrets
 .env
 .env.*
@@ -23,5 +20,5 @@ Thumbs.db
 *.log
 npm-debug.log*
 
-# Python draft (optional)
+# Python draft cache
 backend/app/__pycache__/
