@@ -864,6 +864,8 @@ textarea { resize: vertical; min-height: 88px; }
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   position: relative;
+  max-height: 85vh;
+  overflow-y: auto;
 }
 
 .bounty-modal h2 {
