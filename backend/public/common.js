@@ -47,10 +47,6 @@ export function toast(msg) {
   setTimeout(() => el.remove(), 2800);
 }
 
-if (typeof window !== "undefined") {
-  window.toast = window.toast || toast;
-}
-
 export function formatPrice(cents) {
   return `¥${(cents / 100).toFixed(0)}`;
 }

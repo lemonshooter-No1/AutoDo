@@ -175,11 +175,6 @@ async function refreshAll() {
   await refreshWallet();
 }
 
-const deliveryPhotoInput = $("delivery-photo");
-if (deliveryPhotoInput) {
-  deliveryPhotoInput.setAttribute("autocomplete", "off");
-}
-
 async function init() {
   await refreshAll();
 }

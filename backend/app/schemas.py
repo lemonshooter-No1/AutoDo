@@ -49,7 +49,6 @@ class TaskSpec(BaseModel):
     executable_ready: bool = False
     missing_fields: list[str] = Field(default_factory=list)
     is_online: bool = False
-    flow: str = "A"  # 'A' = 顺手帮 (single quick task), 'B' = 悬赏令 (bounty/multi-person)
 
 
 class CreateTaskRequest(BaseModel):
@@ -63,7 +62,6 @@ class ClarifyRequest(BaseModel):
 
 class ConfirmPaymentRequest(BaseModel):
     amount_cents: int | None = None
-    suggested_price_cents: int | None = None  # 用户自定义的价格（可选）
 
 
 class WorkerGoOnlineRequest(BaseModel):

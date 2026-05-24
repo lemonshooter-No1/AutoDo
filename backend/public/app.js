@@ -124,44 +124,7 @@ function showEmployerStep(step) {
 }
 
 function renderSpec(task) {
-  // Store current task spec globally for later price editing
-  window._currentTaskSpec = task.spec;
-  
   renderTaskSpecCard($("spec-preview"), task.spec);
-  const flow = (task.spec && task.spec.flow) || 'A';
-  const payBtn = $("btn-pay");
-  if (payBtn) {
-    payBtn.textContent = flow === 'A' ? '确认并托管（顺手帮）' : '确认并托管（悬赏令）';
-  }
-  
-  const preview = $("spec-preview");
-  if (preview) {
-    // Add price editing section
-    const priceEditor = document.createElement('div');
-    priceEditor.style.marginTop = '0.75rem';
-    priceEditor.style.paddingTop = '0.75rem';
-    priceEditor.style.borderTop = '1px solid rgba(255,255,255,0.1)';
-    priceEditor.innerHTML = `
-      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem">
-        <label style="font-size:0.85rem;color:var(--muted)">调整报价（可选）：</label>
-        <input type="number" id="price-input" min="50" max="50000" step="100" value="${(task.spec.suggested_price_cents / 100).toFixed(0)}" style="width:80px;padding:0.25rem 0.5rem;border-radius:6px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.04);color:white;font-size:0.85rem" />
-        <span style="font-size:0.85rem;color:var(--muted)">元</span>
-      </div>
-    `;
-    preview.appendChild(priceEditor);
-    
-    // Add flow note
-    const note = document.createElement('div');
-    note.className = 'flow-note';
-    note.style.fontSize = '0.85rem';
-    note.style.color = 'var(--muted)';
-    note.style.marginTop = '0.5rem';
-    note.textContent = flow === 'A' ? '推荐：顺手帮（单人、近距离小件）' : '推荐：悬赏令（多人或系列任务）';
-    // remove existing note if any
-    const existing = preview.querySelector('.flow-note');
-    if (existing) existing.remove();
-    preview.appendChild(note);
-  }
 }
 
 function renderClarifyForm(questions) {
@@ -170,20 +133,7 @@ function renderClarifyForm(questions) {
   for (const q of questions || []) {
     const div = document.createElement("div");
     div.className = "clarify-field";
-    const inputId = `clarify-${q.field}`;
-    div.innerHTML = `
-      <label for="${inputId}">${q.label}</label>
-      <div class="input-wrapper">
-        <input id="${inputId}" type="text" name="${q.field}" required placeholder="请填写…" />
-        <button type="button" class="voice-trigger icon-voice-btn" data-voice-target="${inputId}" title="按住说话">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-            <line x1="12" y1="19" x2="12" y2="22"></line>
-          </svg>
-        </button>
-      </div>
-    `;
+    div.innerHTML = `<label>${q.label}</label><input type="text" name="${q.field}" required placeholder="请填写…" />`;
     form.appendChild(div);
   }
 }
@@ -201,99 +151,18 @@ function renderEmployerStatus(task) {
   $("status-badge").textContent = labels[task.status] || task.status;
   $("status-badge").className = "badge " + (task.status === "completed" ? "ok" : "wait");
   const price = (task.escrow_cents || task.spec?.suggested_price_cents || 0) / 100;
-  const flow = task.spec?.flow || 'A';
   $("status-detail").innerHTML = [
     `<strong>订单</strong> ${task.id.slice(0, 8)}…`,
     task.push_sent_to?.length
-      ? `<strong>已推送</strong> ${task.push_sent_to.length} 名雇员` : "",
+      ? `<strong>已推送</strong> ${task.push_sent_to.length} 名雇员`
+      : "",
     task.worker_id
-      ? `<strong>接单人</strong> ${task.worker_id}` : "<strong>状态</strong> 等待雇员接单",
+      ? `<strong>接单人</strong> ${task.worker_id}`
+      : "<strong>状态</strong> 等待雇员接单",
     price ? `<strong>托管</strong> ¥${price.toFixed(2)}` : "",
-    `<strong>流程</strong> ${flow === 'A' ? '顺手帮' : '悬赏令'}`,
-    flow === 'B' ? `<div style=\"margin-top:6px;color:var(--muted)\">悬赏令已发布：系统将更广泛推送并接受多名参与者。</div>` : "",
   ]
     .filter(Boolean)
     .join("<br>");
-}
-
-function removeExistingModal() {
-  const existing = document.getElementById('flow-modal-root');
-  if (existing) existing.remove();
-}
-
-function showFlowModal(flow, task) {
-  removeExistingModal();
-  const root = document.createElement('div');
-  root.id = 'flow-modal-root';
-  root.style.position = 'fixed';
-  root.style.inset = '0';
-  root.style.zIndex = '9999';
-  root.style.display = 'flex';
-  root.style.alignItems = 'center';
-  root.style.justifyContent = 'center';
-
-  const backdrop = document.createElement('div');
-  backdrop.style.position = 'absolute';
-  backdrop.style.inset = '0';
-  backdrop.style.background = 'rgba(0,0,0,0.7)';
-  backdrop.addEventListener('click', removeExistingModal);
-
-  const card = document.createElement('div');
-  card.style.position = 'relative';
-  card.style.width = flow === 'A' ? '520px' : '760px';
-  card.style.maxWidth = 'calc(100% - 32px)';
-  card.style.borderRadius = '12px';
-  card.style.padding = '20px';
-  card.style.boxShadow = '0 24px 80px rgba(0,0,0,0.6)';
-  card.style.background = flow === 'A' ? '#0b0b0b' : 'linear-gradient(180deg,#02121a,#081122)';
-  card.style.border = '1px solid rgba(255,255,255,0.06)';
-
-  const title = document.createElement('div');
-  title.style.fontSize = '18px';
-  title.style.fontWeight = '600';
-  title.style.color = flow === 'A' ? '#bde99b' : '#8eefff';
-  title.textContent = flow === 'A' ? '已托管 · 顺手帮' : '已托管 · 悬赏令已发布';
-
-  const body = document.createElement('div');
-  body.style.marginTop = '10px';
-  body.style.color = '#d1d5db';
-  body.style.fontSize = '14px';
-  body.innerHTML = flow === 'A'
-    ? `<p>感谢发布，系统正在向附近雇员推送该任务。通常数分钟内会有人接单。</p><p style="margin-top:8px;color:var(--muted)">提示：顺手帮适合单人、近距离即时履约的小任务。</p>`
-    : `<p>已将悬赏令发布到更广泛的候选池，系统会推送给更多雇员并允许多人参与。</p><p style="margin-top:8px;color:var(--muted)">提示：悬赏令适合任务量大、需要多点位或更高报酬的采集工作。</p>`;
-
-  const actions = document.createElement('div');
-  actions.style.display = 'flex';
-  actions.style.gap = '10px';
-  actions.style.marginTop = '14px';
-
-  const btnPrimary = document.createElement('button');
-  btnPrimary.className = 'btn primary';
-  btnPrimary.textContent = flow === 'A' ? '查看进度' : '查看候选人';
-  btnPrimary.addEventListener('click', () => {
-    removeExistingModal();
-    // focus status panel
-    showEmployerStep('status');
-    if (currentTaskId) {
-      api('GET', `/tasks/${currentTaskId}`).then((t) => renderEmployerStatus(t)).catch(() => {});
-    }
-  });
-
-  const btnClose = document.createElement('button');
-  btnClose.className = 'btn ghost';
-  btnClose.textContent = '关闭';
-  btnClose.addEventListener('click', removeExistingModal);
-
-  actions.appendChild(btnPrimary);
-  actions.appendChild(btnClose);
-
-  card.appendChild(title);
-  card.appendChild(body);
-  card.appendChild(actions);
-
-  root.appendChild(backdrop);
-  root.appendChild(card);
-  document.body.appendChild(root);
 }
 
 $("btn-publish").addEventListener("click", async () => {
@@ -337,21 +206,10 @@ $("btn-clarify").addEventListener("click", async () => {
 
 $("btn-pay").addEventListener("click", async () => {
   try {
-    // Read user-edited price if available
-    const priceInput = $("price-input");
-    const newPrice = priceInput ? parseFloat(priceInput.value) : null;
-    let payload = {};
-    if (newPrice && newPrice > 0 && newPrice !== (window._currentTaskSpec?.suggested_price_cents / 100)) {
-      payload.suggested_price_cents = Math.round(newPrice * 100);
-    }
-    
-    const task = await api("POST", `/tasks/${currentTaskId}/confirm-payment`, payload);
+    const task = await api("POST", `/tasks/${currentTaskId}/confirm-payment`, {});
     renderEmployerStatus(task);
     showEmployerStep("status");
-    const flow = task.spec?.flow || 'A';
-    toast(flow === 'A' ? "已托管 · 正在向附近雇员推送（顺手帮）" : "已托管 · 悬赏令已发布，正在广泛推送（悬赏令）");
-    // show A/B style modal to summarize next steps
-    try { showFlowModal(flow, task); } catch (e) { console.warn('showFlowModal failed', e); }
+    toast("已托管 · 正在向附近雇员推送");
     if (inboxPoll) refreshInbox();
   } catch (e) {
     toast(e.message);

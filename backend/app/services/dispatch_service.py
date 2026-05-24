@@ -25,7 +25,7 @@ def _spec(task: Task) -> dict:
     return json.loads(task.spec_json or "{}")
 
 
-def find_candidates(db: Session, task: Task, flow: str = "A") -> list[tuple[User, float | None]]:
+def find_candidates(db: Session, task: Task) -> list[tuple[User, float | None]]:
     spec = _spec(task)
     required_skills = set(spec.get("skills") or [])
     is_online = spec.get("is_online", False)
@@ -35,10 +35,6 @@ def find_candidates(db: Session, task: Task, flow: str = "A") -> list[tuple[User
         .filter(User.role == "worker", User.is_online.is_(True))
         .all()
     )
-
-    # Adjust radius and top_n based on flow
-    radius_km = RADIUS_KM if flow == "A" else max(RADIUS_KM, 10.0)
-    top_n = PUSH_TOP_N if flow == "A" else max(PUSH_TOP_N, 10)
 
     candidates: list[tuple[User, float | None]] = []
     for w in workers:
@@ -55,17 +51,17 @@ def find_candidates(db: Session, task: Task, flow: str = "A") -> list[tuple[User
             candidates.append((w, 0.0))
             continue
         dist = haversine_km(lat, lng, w.lat, w.lng)
-        if dist <= radius_km:
+        if dist <= RADIUS_KM:
             candidates.append((w, dist))
 
     candidates.sort(key=lambda x: (x[1] is None, x[1] or 9999.0))
-    return candidates[:top_n]
+    return candidates[:PUSH_TOP_N]
 
 
-def dispatch_task(db: Session, task: Task, flow: str = "A") -> list[str]:
+def dispatch_task(db: Session, task: Task) -> list[str]:
     """向候选雇员写入 inbox（模拟 Push）"""
     pushed: list[str] = []
-    for worker, _dist in find_candidates(db, task, flow=flow):
+    for worker, _dist in find_candidates(db, task):
         exists = (
             db.query(WorkerInbox)
             .filter(WorkerInbox.worker_id == worker.id, WorkerInbox.task_id == task.id)

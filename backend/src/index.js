@@ -30,78 +30,7 @@ import {
 import { db, getTask, getUser, upsertTask, upsertUser } from "./store.js";
 
 const app = express();
-app.use(express.json({ limit: "12mb" }));
-
-async function transcribeAudioWithSiliconFlow({ audioBase64, mimeType, model }) {
-  const apiKey = process.env.SILICON_FLOW_API_KEY;
-  const apiBase = process.env.SILICON_FLOW_API_BASE || "https://api.siliconflow.cn/v1";
-  if (!apiKey) {
-    const error = new Error("未配置 SILICON_FLOW_API_KEY，无法进行语音转写");
-    error.statusCode = 503;
-    throw error;
-  }
-
-  const rawBase64 = String(audioBase64 || "");
-  const payloadBase64 = rawBase64.includes(",") ? rawBase64.split(",")[1] : rawBase64;
-  if (!payloadBase64) {
-    const error = new Error("缺少音频内容");
-    error.statusCode = 400;
-    throw error;
-  }
-
-  const buffer = Buffer.from(payloadBase64, "base64");
-  const fileName = mimeType?.includes("mp4") ? "voice.m4a" : mimeType?.includes("wav") ? "voice.wav" : "voice.webm";
-  const blob = new Blob([buffer], { type: mimeType || "audio/webm" });
-  const formData = new FormData();
-  formData.append("file", blob, fileName);
-  formData.append("model", model || "FunAudioLLM/SenseVoiceSmall");
-
-  const response = await fetch(`${apiBase}/audio/transcriptions`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: formData,
-  });
-
-  const responseText = await response.text();
-  let data = {};
-  try {
-    data = responseText ? JSON.parse(responseText) : {};
-  } catch {
-    data = { raw: responseText };
-  }
-
-  if (!response.ok) {
-    const error = new Error(data.error || data.message || data.raw || "语音转写失败");
-    error.statusCode = response.status;
-    error.details = data;
-    throw error;
-  }
-
-  return data.text || data.transcript || data.result || "";
-}
-
-function registerTranscribeRoute(route) {
-  app.post(route, async (req, res) => {
-    try {
-      const text = await transcribeAudioWithSiliconFlow({
-        audioBase64: req.body?.audio_base64,
-        mimeType: req.body?.mime_type,
-        model: req.body?.model,
-      });
-      res.json({ text });
-    } catch (error) {
-      res.status(error.statusCode || 500).json({
-        error: error.message || "语音转写失败",
-        details: error.details || null,
-      });
-    }
-  });
-}
-
-registerTranscribeRoute("/api/audio/transcribe");
-registerTranscribeRoute("/audio/transcribe");
+app.use(express.json());
 
 function taskResponse(task) {
   return {
@@ -147,7 +76,7 @@ app.post("/tasks", (req, res) => {
   db.write(state);
 
   const out = taskResponse(task);
-  if (!spec.executable_ready) out.clarify_questions = clarifyQuestions(spec, spec.missing_fields);
+  if (!spec.executable_ready) out.clarify_questions = clarifyQuestions(spec.missing_fields);
   res.json(out);
 });
 
@@ -165,7 +94,7 @@ app.post("/tasks/:id/clarify", (req, res) => {
   db.write(state);
 
   const out = taskResponse(task);
-  if (!task.spec.executable_ready) out.clarify_questions = clarifyQuestions(task.spec, task.spec.missing_fields);
+  if (!task.spec.executable_ready) out.clarify_questions = clarifyQuestions(task.spec.missing_fields);
   res.json(out);
 });
 
