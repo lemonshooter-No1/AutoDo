@@ -32,7 +32,7 @@
       人类在现实世界搞定
     </h1>
     <p class="hero-sub">
-      一句话描述需求，AI 标准化并推送。雇员听单接单、按卡片执行、自动验货放款。<strong>无需逛大厅，无需聊天。</strong>
+      Say then wait, accept then do it
     </p>
 
     <div class="hero-stats">
@@ -107,9 +107,17 @@
         <div class="glass-card" id="card-publish">
           <div class="card-label">Step 1 · AI 解析</div>
           <h3>Post a task · 发布任务</h3>
-          <p class="hint">自然语言输入，AI 生成标准任务卡片（对标 RentAHuman 的 bounty，但零沟通）。</p>
-          <textarea id="employer-input" rows="3" placeholder="明天早上8点帮我到朝阳区XX小区喂一下猫，猫粮在桌子上"></textarea>
-          <button type="button" class="btn ghost voice-trigger" data-voice-target="employer-input">按住说话</button>
+          <p class="hint">自然语言输入，AI 生成标准任务卡片。</p>
+          <div class="textarea-wrapper">
+            <textarea id="employer-input" rows="3" placeholder="明天早上8点帮我到朝阳区XX小区喂一下猫，猫粮在桌子上"></textarea>
+            <button type="button" class="voice-trigger icon-voice-btn" data-voice-target="employer-input" title="按住说话">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="22"></line>
+              </svg>
+            </button>
+          </div>
           <button type="button" id="btn-publish" class="btn primary full">AI 解析并发布 →</button>
         </div>
 

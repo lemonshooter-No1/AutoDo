@@ -45,8 +45,16 @@
       <h2>当前任务</h2>
       <div id="worker-card" class="task-spec-card"></div>
       <label for="delivery-photo">交付凭证</label>
-      <input type="text" id="delivery-photo" placeholder="照片文件名或链接" />
-      <button type="button" class="btn ghost voice-trigger" data-voice-target="delivery-photo">按住说话</button>
+      <div class="input-wrapper">
+        <input type="text" id="delivery-photo" placeholder="照片文件名或链接" />
+        <button type="button" class="voice-trigger icon-voice-btn" data-voice-target="delivery-photo" title="按住说话">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+          </svg>
+        </button>
+      </div>
       <button type="button" id="btn-submit" class="btn primary full">提交交付</button>
     </section>
 

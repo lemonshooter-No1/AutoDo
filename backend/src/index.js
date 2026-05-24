@@ -193,7 +193,7 @@ app.post("/tasks/:id/confirm-payment", (req, res) => {
   res.json(taskResponse(task));
 });
 
-/** 已发布任务（供浏览，类似 RentAHuman bounties 列表） */
+/** 已发布任务（供浏览） */
 const PUBLIC_STATUSES = new Set([
   "escrowed",
   "dispatching",
