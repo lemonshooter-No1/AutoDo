@@ -228,7 +228,7 @@ def parse_employer_input(raw: str) -> TaskSpec:
         spec.skills = ["digital_labor"]
         spec.suggested_price_cents = 5000
     elif "朝阳" in raw:
-        # MVP：演示用固定坐标（朝阳区中心附近）
+        # MVP：开发用固定坐标（朝阳区中心附近）
         spec.location.lat = 39.9219
         spec.location.lng = 116.4436
 

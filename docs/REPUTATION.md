@@ -38,7 +38,7 @@
 
 - 雇主确认付款后 → 重算该雇主
 - 任务验货完成放款后 → 重算雇主 + 雇员
-- `POST /dev/seed` → 全量重算
+-- (seeding endpoint removed)
 
 ## 内部查询 API
 
@@ -50,7 +50,7 @@ POST /internal/reputation/recompute
 示例：
 
 ```powershell
-curl http://127.0.0.1:8000/internal/reputation/employer-demo
+curl http://127.0.0.1:8000/internal/reputation/<user_id>
 curl -X POST http://127.0.0.1:8000/internal/reputation/recompute
 ```
 

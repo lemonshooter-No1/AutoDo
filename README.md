@@ -38,12 +38,7 @@ npm start
 - **雇主中心**：http://127.0.0.1:8000/employer.html（发布 + 查看我的任务是否完成）
 - **雇员中心**：http://127.0.0.1:8000/worker.html（听单 + 查看平台推送 + 接单执行）
 
-也可用命令行演示（另开终端）：
-
-```powershell
-cd C:\AutoDo
-npm run demo
-```
+（可用命令行脚本运行辅助工具，若存在）
 
 ### 端口被占用（EADDRINUSE）
 
@@ -57,10 +52,7 @@ npm start
 
 ```powershell
 npm run start:8001
-$env:PORT="8001"; npm run demo
 ```
-
-演示脚本会走完整链路：解析 → 澄清 → 托管 → 派单 → 接单 → 验货放款。
 
 ## API 摘要
 
@@ -77,7 +69,6 @@ $env:PORT="8001"; npm run demo
 
 ```
 backend/src/      # Express API（六步闭环）
-backend/scripts/demo_flow.js
 docs/             # 精简 PRD
 backend/app/      # Python 草案（需 3.10+，可选）
 ```

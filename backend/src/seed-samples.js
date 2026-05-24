@@ -1,4 +1,4 @@
-/** 演示用已发布任务（任务列表页展示） */
+/** 样例已发布任务（任务列表页展示） */
 import { upsertTask } from "./store.js";
 
 const ago = (hours) => new Date(Date.now() - hours * 3600000).toISOString();
@@ -118,23 +118,23 @@ export function seedSampleBounties(state) {
     upsertTask(state, {
       id: s.id,
       status: s.status,
-      employer_id: "employer-demo",
-      worker_id: s.status === "in_progress" ? "worker-demo" : null,
+      employer_id: "employer-sample",
+      worker_id: s.status === "in_progress" ? "worker-sample" : null,
       raw_input: s.raw_input,
       spec: { ...s.spec, executable_ready: true, missing_fields: [], deliverables: [] },
       clarifications: {},
       escrow_cents: s.escrow_cents,
-      push_sent_to: ["worker-demo"],
+      push_sent_to: ["worker-sample"],
       delivery: null,
       created_at: ago(i + 2),
       updated_at: pushedAt,
     });
     const exists = state.inbox.some(
-      (row) => row.worker_id === "worker-demo" && row.task_id === s.id
+      (row) => row.worker_id === "worker-sample" && row.task_id === s.id
     );
     if (!exists) {
       state.inbox.push({
-        worker_id: "worker-demo",
+        worker_id: "worker-sample",
         task_id: s.id,
         accepted: s.status === "in_progress",
         pushed_at: pushedAt,

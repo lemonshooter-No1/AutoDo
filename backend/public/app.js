@@ -1,7 +1,7 @@
 const API = "";
 
-let employerId = "employer-demo";
-let workerId = "worker-demo";
+let employerId = "";
+let workerId = "";
 let currentTaskId = null;
 let activeWorkerTaskId = null;
 let inboxPoll = null;
@@ -112,12 +112,8 @@ function renderTaskSpecCard(container, spec) {
 async function init() {
   duplicateMarquee();
   animateStats();
-  try {
-    const seed = await api("POST", "/dev/seed");
-    employerId = seed.employer_id;
-    workerId = seed.worker_id;
-  } catch (_) {}
-  refreshWallet();
+  // Seeding removed; wallet refresh will run when workerId is set.
+  if (workerId) refreshWallet();
 }
 
 function showEmployerStep(step) {

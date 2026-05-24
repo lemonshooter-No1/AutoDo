@@ -51,7 +51,7 @@ def find_candidates(db: Session, task: Task, flow: str = "A") -> list[tuple[User
         if w.lat is None or w.lng is None:
             continue
         if lat is None or lng is None:
-            # 无坐标：MVP 所有在线工人都可收（演示用）
+            # 无坐标：MVP 所有在线工人都可收（开发/测试用）
             candidates.append((w, 0.0))
             continue
         dist = haversine_km(lat, lng, w.lat, w.lng)

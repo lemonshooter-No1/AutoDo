@@ -4,7 +4,7 @@ backend/.venv/
 __pycache__/
 *.pyc
 
-# Local data (each dev has own demo DB)
+# Local data (each dev has own local DB)
 backend/data/
 
 # Env & secrets

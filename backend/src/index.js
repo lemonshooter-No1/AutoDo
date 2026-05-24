@@ -522,49 +522,7 @@ app.get("/workers/:id/wallet", (req, res) => {
   res.json({ worker_id: w.id, balance_cents: w.wallet_balance_cents || 0 });
 });
 
-app.post("/dev/seed", (_req, res) => {
-  const state = db.read();
-  upsertUser(state, {
-    id: "employer-demo",
-    role: "employer",
-    name: "演示雇主",
-    wallet_balance_cents: 100000,
-  });
-  upsertUser(state, {
-    id: "worker-demo",
-    role: "worker",
-    name: "演示雇员",
-    lat: 39.9219,
-    lng: 116.4436,
-    skills: ["pet_care", "errand", "digital_labor"],
-    is_online: false,
-    wallet_balance_cents: 0,
-  });
-  const samplesAdded = seedSampleBounties(state);
-  for (const task of Object.values(state.tasks)) {
-    for (const wid of task.push_sent_to || []) {
-      const exists = state.inbox.some((i) => i.worker_id === wid && i.task_id === task.id);
-      if (!exists) {
-        state.inbox.push({
-          worker_id: wid,
-          task_id: task.id,
-          accepted: task.worker_id === wid,
-          pushed_at: task.updated_at || task.created_at,
-        });
-      }
-    }
-  }
-  recomputeAllReputations(state);
-  recomputeCategoryPrices(state, getMatchingConfig());
-  recomputeAllWorkerStats(state);
-  db.write(state);
-  res.json({
-    ok: true,
-    employer_id: "employer-demo",
-    worker_id: "worker-demo",
-    samples_added: samplesAdded,
-  });
-});
+// Demo seeding endpoint removed.
 
 /** 内部运维：查询信誉（勿接入前端） */
 app.get("/internal/reputation/:userId", (req, res) => {

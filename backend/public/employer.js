@@ -9,7 +9,7 @@ import {
   toast,
 } from "./common.js";
 
-let employerId = "employer-demo";
+let employerId = "";
 let currentTaskId = null;
 let allTasks = [];
 let filter = "all";
@@ -164,10 +164,6 @@ document.querySelectorAll(".filter-btn").forEach((btn) => {
 $("btn-refresh-list").addEventListener("click", () => loadMyTasks().catch((e) => toast(e.message)));
 
 async function init() {
-  try {
-    const seed = await ensureSeed();
-    employerId = seed.employer_id || employerId;
-  } catch (_) {}
   await loadMyTasks();
   setInterval(() => loadMyTasks().catch(() => {}), 8000);
 }

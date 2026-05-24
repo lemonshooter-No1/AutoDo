@@ -119,4 +119,3 @@ parsing → clarifying → awaiting_payment → escrowed → dispatching
 | `backend/src/` | Node + Express + JSON 存储，六步 API 已打通 |
 | AI | 规则 mock（喂猫/跑腿关键词）；后续可接 OpenAI |
 | 支付/Push | mock 托管 + inbox 模拟推送 |
-| 演示 | `npm start` 后 `npm run demo` |

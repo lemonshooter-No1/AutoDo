@@ -311,29 +311,4 @@ def worker_wallet(worker_id: str, db: Session = Depends(get_db)):
     return WalletResponse(worker_id=worker_id, balance_cents=worker.wallet_balance_cents)
 
 
-# --- 演示数据 ---
-
-@app.post("/dev/seed")
-def seed_demo(db: Session = Depends(get_db)):
-    """创建演示雇主与雇员（朝阳区附近）。"""
-    for uid, role, name, lat, lng, skills in [
-        ("employer-demo", "employer", "演示雇主", None, None, []),
-        (
-            "worker-demo",
-            "worker",
-            "演示雇员",
-            39.9219,
-            116.4436,
-            ["pet_care", "errand"],
-        ),
-    ]:
-        u = db.get(User, uid)
-        if not u:
-            u = User(id=uid, role=role, name=name, lat=lat, lng=lng)
-            u.skills = skills
-            db.add(u)
-        else:
-            u.lat, u.lng = lat, lng
-            u.skills = skills
-    db.commit()
-    return {"ok": True, "employer_id": "employer-demo", "worker_id": "worker-demo"}
+# Seed endpoint removed.

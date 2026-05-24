@@ -55,11 +55,7 @@ npm start
 
 浏览器打开：**http://127.0.0.1:8000**
 
-另开终端跑端到端演示：
-
-```powershell
-npm run demo
-```
+（如需端到端脚本，项目中可能会包含辅助脚本）
 
 端口占用时：
 
@@ -125,8 +121,7 @@ git push
 ## 五、可选：实时联调
 
 - **VS Code / Cursor Live Share**：同屏改代码  
-- **ngrok / localtunnel**：把本机 `8000` 暴露给队友访问（演示用）  
-- 统一用 `main` 上的 `npm run demo` 作为「冒烟测试」
+-- **ngrok / localtunnel**：把本机 `8000` 暴露给队友访问  
 
 ---
 
@@ -146,15 +141,15 @@ style: 前端浅色样式调整
 ```
 AutoDo/
 ├── README.md              # 快速开始
-├── package.json           # 根目录脚本（start / demo）
+├── package.json           # 根目录脚本（start）
 ├── docs/
 │   ├── PROJECT_REQUIREMENTS.md
 │   └── COLLABORATION.md   # 本文件
 └── backend/
     ├── src/               # Express API
     ├── public/            # 静态前端
-    ├── scripts/           # demo_flow.js
+    ├── scripts/           # 项目脚本（若有）
     └── package.json
 ```
 
-有问题先 `npm run demo` 确认六步闭环是否正常，再在 Issue 或群里描述现象。
+如有端到端问题，可先运行项目相关脚本确认流程是否正常，再在 Issue 或群里描述现象。

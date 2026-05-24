@@ -1,6 +1,5 @@
 import {
   api,
-  ensureSeed,
   formatPrice,
   formatTime,
   STATUS_LABEL,
@@ -8,7 +7,7 @@ import {
   toast,
 } from "./common.js";
 
-let workerId = "worker-demo";
+let workerId = "";
 let activeTaskId = null;
 let inboxPoll = null;
 
@@ -182,10 +181,6 @@ if (deliveryPhotoInput) {
 }
 
 async function init() {
-  try {
-    const seed = await ensureSeed();
-    workerId = seed.worker_id || workerId;
-  } catch (_) {}
   await refreshAll();
 }
 

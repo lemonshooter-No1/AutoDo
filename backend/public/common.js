@@ -61,8 +61,8 @@ export function formatTime(iso) {
 }
 
 export async function ensureSeed() {
-  const res = await fetch("/dev/seed", { method: "POST" });
-  return parseJson(res);
+  // Seeding endpoint removed; return empty result.
+  return {};
 }
 
 export function statusClass(status) {

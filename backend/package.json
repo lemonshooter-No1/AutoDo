@@ -7,8 +7,7 @@
     "start": "node src/index.js",
     "start:8001": "set PORT=8001&& node src/index.js",
     "stop": "node scripts/stop-port.js 8000",
-    "dev": "node --watch src/index.js",
-    "demo": "node scripts/demo_flow.js"
+    "dev": "node --watch src/index.js"
   },
   "dependencies": {
     "express": "^4.21.2",
